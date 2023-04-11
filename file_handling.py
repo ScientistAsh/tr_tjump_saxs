@@ -2,47 +2,29 @@
 tr_tjump_saxs: file_handle.py
 Date created (mm-dd-yy): 04-01-2023
 
-This module is part of the tr_tjump_saxs package for processing and anlayzing pump-probe time resolved, temperature-jump small angle X-ray scattering data sets. This module includes functions for creating new output directories, loading saxs curves, and plotting saxs curves.
+This module is part of the tr_tjump_saxs package for processing and anlayzing pump-probe time resolved, 
+temperature-jump small angle X-ray scattering data sets. This module includes functions for creating new 
+output directories, loading saxs curves, and plotting saxs curves.
 
 Ashley L. Bennett, PhD
 @ScientistAsh
 '''
 
-# import modules
+# import dependent modules
 import numpy as np
-import scipy
-#from scipy import integrate
-#from scipy.stats import bootstrap
-#from scipy.stats import norm
 import os 
-import pandas as pd
-from pandas import read_table,DataFrame
-from collections import namedtuple
-#from os import listdir, makedirs, path
 import shutil
-#from sys import argv
-import math
-#import pickle as pkl
-#import pprint as pprint
 import warnings
 import matplotlib
-#matplotlib.use("MacOSX")
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1.inset_locator import (inset_axes, InsetPosition,
                                                   mark_inset)
-from numpy.linalg import svd
-#import scipy.stats.mstats
 import sys
-from solution_scattering import *
-import trace
-import parse
-import seaborn as sns
+
 import matplotlib.pylab as pl 
 from time import sleep
 from tqdm.notebook import tqdm
-import csv
-from sklearn.metrics import r2_score
-from scipy.interpolate import interp1d
+
 
 
 def make_dir(f):
@@ -74,15 +56,15 @@ def make_dir(f):
     '''
     try:
         if not isinstance(f, str):
-            raise TypeError('Oops! f must be str type.  Try again...')
+            raise TypeError('\033[1;91mOops! f must be str type.  Try again...\033[1;91m')
         
         elif not os.path.exists(f):
             os.makedirs(f)
         else:
-            print('Directory already exists!')
+            print('\033[1;92mDirectory already exists!\033[1;92m')
             
     except TypeError:
-        new_f = input('A TypeError occurred. Enter a new directory path (do not include quotations): ')
+        new_f = input('ATypeError occurred. Enter a new directory path (do not include quotations): ')
         make_dir(new_f)
         
     return
@@ -143,16 +125,16 @@ def make_flist(directory='./', prefix=None, suffix=None):
     
     try:
         if not os.path.exists(directory):
-            raise FileNotFoundError('FileNotFoundError: Directory does not exist. Try again...')
+            raise FileNotFoundError('\033[1;91mFileNotFoundError: Directory does not exist. Try again...\033[1;91m')
             
         if not isinstance(directory, str):
-            raise TypeError('TypeError: Oops! directory must be str type. Try again...')
+            raise TypeError('\033[1;91mTypeError: Oops! directory must be str type. Try again...\033[1;91m')
            
         if prefix is not None and not isinstance(prefix, str):
-            raise TypeError('TypeError: Oops! prefix must be str type. Try again...')
+            raise TypeError('\033[1;91mTypeError: Oops! prefix must be str type. Try again...\033[1;91m')
             
         if suffix is not None and not isinstance(suffix, str):
-            raise TypeError('TypeError: Oops! suffix must be str type. Try again...')
+            raise TypeError('\033[1;91mTypeError: Oops! suffix must be str type. Try again...\033[1;91m')
     
     except (TypeError, FileNotFoundError) as e:
         print(e.args[0])
@@ -201,11 +183,11 @@ def make_flist(directory='./', prefix=None, suffix=None):
             if f.startswith(prefix) & f.endswith(suffix):
                 files.append(str(directory + f))
     
-    print('Done loading ' + str(len(files)) + ' files!')
+    print('\033[1;92mDone loading ' + str(len(files)) + ' files!\033[1;92m')
     
     # check that files are loaded into list
     if len(files) == 0:
-        print('WARNING: No files loaded')
+        print('\033[1;93mWARNING: No files loaded\033[1;93m')
                         
     return files
 
@@ -284,13 +266,13 @@ def load_saxs(file, delim=' ', mask=0):
     
     try:
         if not isinstance(file, str):
-            raise TypeError('TypeError: file must be str type. Try again...')
+            raise TypeError('\033[1;91mTypeError: file must be str type. Try again...\033[1;91m')
             
         if not isinstance(delim, str):
-            raise TypeError('TypeError: delim must be str type. Try again...')
+            raise TypeError('\033[1;91mTypeError: delim must be str type. Try again...\033[1;91m')
         
         if not isinstance(mask, int):
-            raise TypeError('TypeError: mask must be int type. Try again...')
+            raise TypeError('\033[1;91mTypeError: mask must be int type. Try again...\033[1;91m')
 
                 
                 
@@ -393,16 +375,16 @@ def load_set(flist,  delim=' ', mask=0, err=False):
     # test if input parameters are proper data type
     try:
         if not isinstance(flist, list):     
-            raise TypeError('TypeError: Oops! flist must be list type. Try again...')
+            raise TypeError('\033[1;91mTypeError: Oops! flist must be list type. Try again...\033[1;91m')
             
         if not isinstance(delim, str):     
-            raise TypeError('TypeError: Oops! delim must be str type. Try again...')
+            raise TypeError('\033[1;91mTypeError: Oops! delim must be str type. Try again...\033[1;91m')
         
         if not isinstance(mask, int):     
-            raise TypeError('TypeError: Oops! mask must be int type. Try again...')
+            raise TypeError('\033[1;91mTypeError: Oops! mask must be int type. Try again...\033[1;91m')
         
         if not isinstance(err, bool):     
-            raise TypeError('Oops! err must be bool type. Try again...')
+            raise TypeError('\033[1;91mOops! err must be bool type. Try again...\033[1;91m')
             
                     
         # load laser on data
@@ -414,7 +396,7 @@ def load_set(flist,  delim=' ', mask=0, err=False):
         
             if err == True:
                 if curve.shape[1] < 3:
-                    raise IndexError('File does not contain errors. Change err to False')
+                    raise IndexError('\033[1;91mFile does not contain errors. Change err to False\033[1;91m')
                 else:
                     error.append(curve[:,2])
             
@@ -441,7 +423,7 @@ def load_set(flist,  delim=' ', mask=0, err=False):
             delim = str(input('ValueError: File has a different delim. Enter a new str value for delim (do not include quotations): '))
             
         elif isinstance(e, IndexError):
-            print('IndexError: err=True indicates file contains error but there is no column containing errors. Changing err to False...')
+            print('\033[1mIndexError: err=True indicates file contains error but there is no column containing errors. Changing err to False...')
             err = False
             # load laser on data
             
@@ -462,6 +444,6 @@ def load_set(flist,  delim=' ', mask=0, err=False):
     # get q
     q = curve[:,0]
     
-    print('Done loading ' + str(len(data)) + ' curves!')
+    print('\033[1;92mDone loading ' + str(len(data)) + ' curves!\033[1;92m')
         
     return data, data_arr, q, error
