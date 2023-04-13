@@ -256,34 +256,8 @@ def remove_outliers(flist, olist, fslice=None):
     cleaned : list
         List containing files with outliers removed. 
         
-    outliers : list
+    olist : list
         List containg the outlier files
-        
-        
-    Raises:
-    -------
-    TypeError:
-        When flist or olist is not list type or when fsclice is not list or None type.
-    
-    Examples:
-    ---------
-    cleaned, outliers = remove_outliers(flist=on_files, olist=on_outliers[0], fslice=[-9,-6])
-    > Number of files loaded: 100
-      Number of outliers to remove: 1
-      /datacommons/dhvi-md/TR_T-jump_SAXS_Mar2023/Trimer10.17Only_Series3_44C/processed_series3_44C_all_images/TrimerOnly_Series-3_44C_5us_030_Q.chi is an outlier
-      Number of files remaining after outliers removed: 99
-      
-    cleaned
-    > ['/datacommons/dhvi-md/TR_T-jump_SAXS_Mar2023/Trimer10.17Only_Series3_44C/processed_series3_44C_all_images/TrimerOnly_Series-3_44C_5us_048_Q.chi',
-       '/datacommons/dhvi-md/TR_T-jump_SAXS_Mar2023/Trimer10.17Only_Series3_44C/processed_series3_44C_all_images/TrimerOnly_Series-3_44C_5us_019_Q.chi',
-       '/datacommons/dhvi-md/TR_T-jump_SAXS_Mar2023/Trimer10.17Only_Series3_44C/processed_series3_44C_all_images/TrimerOnly_Series-3_44C_5us_023_Q.chi',
-       '/datacommons/dhvi-md/TR_T-jump_SAXS_Mar2023/Trimer10.17Only_Series3_44C/processed_series3_44C_all_images/TrimerOnly_Series-3_44C_5us_040_Q.chi',
-       ...]
-       
-    outliers
-    > array('/datacommons/dhvi-md/TR_T-jump_SAXS_Mar2023/Trimer10.17Only_Series3_44C/processed_series3_44C_all_images/TrimerOnly_Series-3_44C_5us_030_Q.chi',
-      dtype='<U142')
-
     '''
     
      # test if input parameters are proper data type
@@ -297,6 +271,21 @@ def remove_outliers(flist, olist, fslice=None):
     if not isinstance(fslice, (list, type(None))):     
         raise TypeError('\033[1;91mTypeError: Oops! fslice must be list type. Try again...\033[1;91m')
 
+    '''
+    except TypeError as e:
+        print(e.args[0])
+        if isinstance(e, TypeError):
+            if e.args[0][18] == 'l':
+                flist = input('TypeError: Enter a new list for flist parameter. Make sure files in flist include full path: ')
+                
+            elif e.args[0][17] == 'o':
+                olist = input('TypeError: Enter a new list for olist parameter. Make sure files in olist include full path: ')
+              
+            elif e.args[0][18] == 's':
+                fslice = input('TypeError: Enter a new list value for fslice. If unsure of proper fslice use None instead: ')
+    '''        
+        
+                
     
     # get length of file list before outliers are removed
     print('\033[92mNumber of files loaded: \033[92m' + str(len(flist)))
@@ -333,4 +322,4 @@ def remove_outliers(flist, olist, fslice=None):
     else:
         print('\033[1;91mWARNING! Number of files remaining after outliers removed: ' + str(len(cleaned)) + ' does not match the number expected based on the size of input file and outlier lists\033[1;91m')
            
-    return cleaned, outliers 
+    return cleaned, olist 
