@@ -17,10 +17,9 @@ import shutil
 import warnings
 import matplotlib
 import matplotlib.pyplot as plt
-from mpl_toolkits.axes_grid1.inset_locator import (inset_axes, InsetPosition,
-                                                  mark_inset)
+from mpl_toolkits.axes_grid1.inset_locator import (inset_axes, InsetPosition, mark_inset)
+import traceback 
 import sys
-
 import matplotlib.pylab as pl 
 from time import sleep
 from tqdm.notebook import tqdm
@@ -56,24 +55,25 @@ def make_dir(f):
     '''
     try:
         if not isinstance(f, str):
-            raise TypeError('\033[1;91mOops! f must be str type.  Try again...\033[1;91m')
+            raise TypeError('Oops! f must be str type.  Try again...')
         
         elif not os.path.exists(f):
             os.makedirs(f)
         else:
             print('\033[1;92mDirectory already exists!\033[1;92m')
             
-    except TypeError:
-        new_f = input('ATypeError occurred. Enter a new directory path (do not include quotations): ')
-        make_dir(new_f)
+    except TypeError as e:
+        tb = e.__traceback__
+        print('\033[91mA TypeError occurred\033[91m')
+        traceback.print_tb(tb)
+        print('\033[93mEnter a new directory path string (do not include quotations): \033[93m')
+        make_dir(input())
         
     return
 
 def make_flist(directory='./', prefix=None, suffix=None):
     '''
-    Function to create a list of files stored in a specific directory. The first dimension will slice
-    through the files in the list while the second dimension will slice the individual file name. Files
-    are not sorted in any partciular order. 
+    Function to create a list of files stored in a specific directory. 
     
     Parameters:
     -----------
@@ -101,56 +101,41 @@ def make_flist(directory='./', prefix=None, suffix=None):
         
     FileNotFoundError
         When the given directory does not exist
-        
-    Examples:
-    ----------
-    files = make_flist(directory='/datacommons/dhvi-md/TR_T-jump_SAXS_Mar2023/Trimer10.17Only_Series3_44C/processed_series3_44C_all_images/',
-                    prefix='diff_TrimerOnly_Series-3_44C_5us_', suffix ='_Q.chi')
-                    
-    files
-    > ['/datacommons/dhvi-md/TR_T-jump_SAXS_Mar2023/Trimer10.17Only_Series3_44C/processed_series3_44C_all_images/diff_TrimerOnly_Series-3_44C_5us_037_-10us_037_Q.chi',
-       '/datacommons/dhvi-md/TR_T-jump_SAXS_Mar2023/Trimer10.17Only_Series3_44C/processed_series3_44C_all_images/diff_TrimerOnly_Series-3_44C_5us_094_-10us_094_Q.chi',
-       '/datacommons/dhvi-md/TR_T-jump_SAXS_Mar2023/Trimer10.17Only_Series3_44C/processed_series3_44C_all_images/diff_TrimerOnly_Series-3_44C_5us_096_-10us_096_Q.chi',
-       '/datacommons/dhvi-md/TR_T-jump_SAXS_Mar2023/Trimer10.17Only_Series3_44C/processed_series3_44C_all_images/diff_TrimerOnly_Series-3_44C_5us_005_-10us_005_Q.chi',
-       '/datacommons/dhvi-md/TR_T-jump_SAXS_Mar2023/Trimer10.17Only_Series3_44C/processed_series3_44C_all_images/diff_TrimerOnly_Series-3_44C_5us_047_-10us_047_Q.chi',
-       '/datacommons/dhvi-md/TR_T-jump_SAXS_Mar2023/Trimer10.17Only_Series3_44C/processed_series3_44C_all_images/diff_TrimerOnly_Series-3_44C_5us_077_-10us_077_Q.chi',
-       '/datacommons/dhvi-md/TR_T-jump_SAXS_Mar2023/Trimer10.17Only_Series3_44C/processed_series3_44C_all_images/diff_TrimerOnly_Series-3_44C_5us_053_-10us_053_Q.chi']
-       
-    files[0]
-    >['/datacommons/dhvi-md/TR_T-jump_SAXS_Mar2023/Trimer10.17Only_Series3_44C/processed_series3_44C_all_images/diff_TrimerOnly_Series-3_44C_5us_037_-10us_037_Q.chi']
-    
-    files[0][-9:-6]
-    > '037'
     '''
     
     try:
         if not os.path.exists(directory):
-            raise FileNotFoundError('\033[1;91mFileNotFoundError: Directory does not exist. Try again...\033[1;91m')
+            raise FileNotFoundError('FileNotFoundError: Directory does not exist. Try again...')
             
         if not isinstance(directory, str):
-            raise TypeError('\033[1;91mTypeError: Oops! directory must be str type. Try again...\033[1;91m')
+            raise TypeError('TypeError: Oops! directory must be str type. Try again...')
            
         if prefix is not None and not isinstance(prefix, str):
-            raise TypeError('\033[1;91mTypeError: Oops! prefix must be str type. Try again...\033[1;91m')
+            raise TypeError('TypeError: Oops! prefix must be str type. Try again...')
             
         if suffix is not None and not isinstance(suffix, str):
-            raise TypeError('\033[1;91mTypeError: Oops! suffix must be str type. Try again...\033[1;91m')
+            raise TypeError('TypeError: Oops! suffix must be str type. Try again...')
     
     except (TypeError, FileNotFoundError) as e:
-        print(e.args[0])
-        #print('WARNING: No files loaded')
+        tb = e.__traceback__
+        print('\033[91m' +str(e.args[0]) +'\033[91m')
+        traceback.print_tb(tb)
+        
         if isinstance(e, TypeError):
             if e.args[0][17] == 'd':
-                directory = input('Enter a new value for directory (do not include quotations): ')
+                print('\033[93mEnter a new value for directory (do not include quotations): \033[93m')
+                directory = input()
                 
             elif e.args[0][17] == 'p':
-                prefix = input('Enter a new value for prefix (do not include quotations): ')
-              
-            elif e.args[0][17] == 's':
-                suffix = input('Enter a new value for suffix (do not include quotations): ')
+                print('\033[93mEnter a new value for prefix (do not include quotations): \033[93m')
+                prefix = input()
                 
+            elif e.args[0][17] == 's':
+                print('\033[93mEnter a new value for suffix (do not include quotations): \033[93m')
+                suffix = input()
         elif isinstance(e, FileNotFoundError):
-            directory = input('Enter a new value for directory (do not include quotations): ')
+            print('\033[93mEnter a new value for directory (do not include quotations): \033[93m')
+            directory = input()
             
         make_flist(directory, prefix, suffix)
         
@@ -183,13 +168,14 @@ def make_flist(directory='./', prefix=None, suffix=None):
             if f.startswith(prefix) & f.endswith(suffix):
                 files.append(str(directory + f))
     
-    print('\033[1;92mDone loading ' + str(len(files)) + ' files!\033[1;92m')
+    print('Done loading ' + str(len(files)) + ' files!')
     
     # check that files are loaded into list
     if len(files) == 0:
         print('\033[1;93mWARNING: No files loaded\033[1;93m')
                         
     return files
+
 
 
 

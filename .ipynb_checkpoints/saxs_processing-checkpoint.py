@@ -37,6 +37,8 @@ import csv
 from sklearn.metrics import r2_score
 from scipy.interpolate import interp1d
 
+from file_handling import *
+
 
 def svd_outliers(arr, flist, q, cutoff=2.5, save_dir='./OUTLIERS/',
                 save_name='outliers.csv'):
