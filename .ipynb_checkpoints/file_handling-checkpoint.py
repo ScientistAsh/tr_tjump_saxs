@@ -252,13 +252,13 @@ def load_saxs(file, delim=' ', mask=0):
     
     try:
         if not isinstance(file, str):
-            raise TypeError('\033[1;91mTypeError: file must be str type. Try again...\033[1;91m')
+            raise TypeError('TypeError: file must be str type. Try again...')
             
         if not isinstance(delim, str):
-            raise TypeError('\033[1;91mTypeError: delim must be str type. Try again...\033[1;91m')
+            raise TypeError('TypeError: delim must be str type. Try again...')
         
         if not isinstance(mask, int):
-            raise TypeError('\033[1;91mTypeError: mask must be int type. Try again...\033[1;91m')
+            raise TypeError('TypeError: mask must be int type. Try again...')
 
                 
                 
@@ -267,20 +267,27 @@ def load_saxs(file, delim=' ', mask=0):
                 
                 
     except Exception as e:
-        print(e.args[0])
+        tb = e.__traceback__
+        print('\033[91m' + str(e.args[0]) + '\033[91m') 
+        traceback.print_tb(tb)
         if isinstance(e, TypeError):
             if e.args[0][11] == 'f':
-                file = input('TypeError: Enter a new str value for file name including full path (do not include quotations): ')
+                print('\033[93mTypeError: Enter a new str value for file name including full path (do not include quotations): \033[93m')
+                file = input()
                 
             elif e.args[0][11] == 'd':
-                delim = input('TypeError: Enter a new str value for delim (do not include quotations): ')
+                print('\033[93mTypeError: Enter a new str value for delim (do not include quotations): \033[93m')
+                delim = input()
               
             elif e.args[0][11] == 'm':
-                mask = int(input('TypeError: Enter a new int value for mask: '))  
+                print('\033[93mTypeError: Enter a new int value for mask: \033[93m')
+                mask = int(input())
                 
         elif isinstance(e, ValueError):
-            delim = str(input('ValueError: File has a different delim. Enter a new str value for delim (do not include quotations): '))
+            print('\033[93mValueError: File has a different delim. Enter a new str value for delim (do not include quotations): \033[93m')
+            delim = str(input())
         
+    
     data = np.loadtxt(file, delimiter=delim, skiprows=mask)
                 
     return data
@@ -361,16 +368,16 @@ def load_set(flist,  delim=' ', mask=0, err=False):
     # test if input parameters are proper data type
     try:
         if not isinstance(flist, list):     
-            raise TypeError('\033[1;91mTypeError: Oops! flist must be list type. Try again...\033[1;91m')
+            raise TypeError('TypeError: Oops! flist must be list type. Try again...')
             
         if not isinstance(delim, str):     
-            raise TypeError('\033[1;91mTypeError: Oops! delim must be str type. Try again...\033[1;91m')
+            raise TypeError('TypeError: Oops! delim must be str type. Try again...')
         
         if not isinstance(mask, int):     
-            raise TypeError('\033[1;91mTypeError: Oops! mask must be int type. Try again...\033[1;91m')
+            raise TypeError('TypeError: Oops! mask must be int type. Try again...')
         
         if not isinstance(err, bool):     
-            raise TypeError('\033[1;91mOops! err must be bool type. Try again...\033[1;91m')
+            raise TypeError('TypeError: Oops! err must be bool type. Try again...')
             
                     
         # load laser on data
@@ -382,7 +389,7 @@ def load_set(flist,  delim=' ', mask=0, err=False):
         
             if err == True:
                 if curve.shape[1] < 3:
-                    raise IndexError('\033[1;91mFile does not contain errors. Change err to False\033[1;91m')
+                    raise IndexError('File does not contain errors. Change err to False')
                 else:
                     error.append(curve[:,2])
             
@@ -390,26 +397,33 @@ def load_set(flist,  delim=' ', mask=0, err=False):
                 continue 
 
             
-    except Exception as e:
-        print(e.args[0])
+    except (TypeError, IndexError) as e:
+        tb = e.__traceback__
+        print('\033[1;91m' + str(e.args[0]) + '\033[1;91m')
+        traceback.print_tb(tb)
+        
         if isinstance(e, TypeError):
             if e.args[0][17] == 'f':
-                flist = input('TypeError: Enter a new list value for flist. Include full path and quotations for each file name (do not include quotations around list): ')
+                print('\033[1;91mTypeError: Enter a new list value for flist. Include full path and quotations for each file name (do not include quotations around list): \033[1;91m')
+                flist = input()
                 
             elif e.args[0][17] == 'd':
-                delim = input('TypeError: Enter a new str value for delim (do not include quotations): ')
+                print('\033[1;91mTypeError: Enter a new str value for delim (do not include quotations): \033[1;91m')
+                delim = input()
               
             elif e.args[0][11] == 'm':
-                mask = int(input('TypeError: Enter a new int value for mask: '))  
+                print('\033[1;91mTypeError: Enter a new int value for mask: \033[1;91m') 
+                mask = int(input())
                 
             elif e.args[0][17] == 'e':
-                err = input('TypeError: Enter a new bool value for err: ')
-                
+                print('\033[1;91mTypeError: Enter a new bool value for err: \033[1;91m')
+                err = input()
         elif isinstance(e, ValueError):
-            delim = str(input('ValueError: File has a different delim. Enter a new str value for delim (do not include quotations): '))
+            print('\033[1;91mValueError: File has a different delim. Enter a new str value for delim (do not include quotations): \033[1;91m')
+            delim = str(input())
             
         elif isinstance(e, IndexError):
-            print('\033[1mIndexError: err=True indicates file contains error but there is no column containing errors. Changing err to False...')
+            print('\033[1;91mIndexError: err=True indicates file contains error but there is no column containing errors. Changing err to False...\033[1;91m')
             err = False
             # load laser on data
             
@@ -433,3 +447,214 @@ def load_set(flist,  delim=' ', mask=0, err=False):
     print('\033[1;92mDone loading ' + str(len(data)) + ' curves!\033[1;92m')
         
     return data, data_arr, q, error
+
+def plot_curve(data_arr, q_arr, labels=None, qmin=None, qmax=None,
+               imin=None, imax=None, x='scattering vector',
+               y='scattering intensity',
+               title='SAXS Scattering Curve', save=False, 
+               save_dir=None, save_name=None):
+    '''
+    Function to plot curve(s). Assumes input files are two columns, q
+    and I. If save=True, then the plots will be saved to file in the 
+    indicated save_dir with the file name save_name. If save_dir does
+    not exist, then it will be automatically created. 
+    
+    Parameters:
+    -----------
+    data_arr : numpy array
+        Numpy array containing scattering curves to be plotted. Must be provided. 
+        Array can easily be generated with the `load_set` function. Assumes that
+        the x values are loaded in a separate array called q, which can be easily 
+        generated with the `load_set` function. 
+        
+    q_arr (optional) : numpy array
+        Numpy array containing q values to be plotted on x-axis. Default value is q. 
+        
+    labels (optional) : list
+        List containing labels to use for plot. If set to None, then output plot 
+        will have no labels. Default value is None. 
+        
+    qmin (optional) : float
+        Minimum Q value for a zoomed in inset plot. If set to None,
+        then the qmin will be determined from the minimum q value in
+        the input set of curves. If both qmin and qmax are set to
+        None, then the inset will include the entire Q range. If qmin,
+        qmax, imin, and imax are all set to None, then no inset plot 
+        will be made. Default value is None. 
+        
+    qmax (optional) : float
+        Maximum Q value for a zoomed in inset plot. If set to None,
+        then the qmax will be determined from the maximum q value in
+        the input set of curves. If both qmin and qmax are set to
+        None, then the inset will include the entire Q range. If qmin,
+        qmax, imin, and imax are all set to None, then no inset plot 
+        will be made. Default value is None. 
+        
+    imin (optional) : float
+        Minimum I value for a zoomed in inset plot. If set to None,
+        then the imin will be determined from the minimum I value in
+        the input set of curves. If both imin and imax are set to
+        None, then the inset will include the entire I range. If qmin,
+        qmax, imin, and imax are all set to None, then no inset plot 
+        will be made. Default value is None. 
+        
+    imax (optional) : float
+        Maximum I value for a zoomed in inset plot. If set to None,
+        then the imax will be determined from the maximum I value in
+        the input set of curves. If both imin and imax are set to
+        None, then the inset will include the entire I range. If qmin,
+        qmax, imin, and imax are all set to None, then no inset plot 
+        will be made. Default value is None.
+        
+    x (optional) : str
+        Label for x axis of plot. Default value is 'scattering vector'
+        
+    y (optional) : str
+        Label of plot y axis. Default value is 'scattering intensity'
+    
+    title (optional) : str
+        Title for plot. Default value is 'SAXS Scattering Curve'
+        
+    save (optional) : bool
+        Indicates if the plot should be saved to file. If set to False 
+        then the plot will not be saved. Default value is False.
+        
+    save_dir (optional) : str
+        Directory to store output files in. If the directory does not exist, then 
+        it will be made. The default value is None. 
+        working directory. 
+        
+    save_name (optional) : str
+        File name to save plot to. Plot only will be saved if save=True. 
+        
+    Returns:
+    --------
+    
+    Raises:
+    -------
+    TypeError:
+        data_arr or q are not np.ndarray data types. 
+        
+        
+    Examples:
+    ---------
+    plot_curve(data_arr='data_arr', q_arr=q, labels=None, qmin=0.02, qmax=0.15, imin=None, imax=None, x='Scattering Vector', 
+               y='Scattering Intensity', title='SAXS Scattering Curves', save=False, save_dir=None, save_name=None)
+    
+        
+    '''
+    
+    # test if input parameters are proper data type
+    try:
+        if not isinstance(data_arr, np.ndarray):     
+            raise TypeError('TypeError: Oops! data_arr must be np.ndarray type. Try again...')
+            
+        if not isinstance(q_arr, np.ndarray):     
+            raise TypeError('TypeError: Oops! q_arr must be np.ndarray type. Try again...')
+            
+    except TypeError as e:
+        tb = e.__traceback__
+        print('\033[1;91m' + str(e.args[0]) + '\033[1;91m')
+        traceback.print_tb(tb)
+        
+        if e.args[0][17] == 'd':
+            print('\033[1;91mTypeError: Enter a new np.ndarray value for data_arr \033[1;91m')
+            
+        elif e.args[0][17] == 'q':
+            print('\033[1;91mTypeError: Enter a new np.ndarray value for q_arr \033[1;91m')
+
+        
+    else:  
+        # set color map
+        n = len(data_arr)
+        colors = pl.cm.rainbow_r(np.linspace(0,1,n))
+    
+        # plot data
+        ax = plt.axes([0.125,0.125, 5, 5])
+        for i,c in zip(data_arr, colors):
+            plt.plot(q_arr, i, color=c)
+        
+        # set position for legend
+        if qmin is None and qmax is None and imin is None and imax is None:
+            leg_loc = (1.0, 0.5)
+            leg_pos = 'center left'
+            leg_cols = 5
+        else:
+            leg_loc = (-0.2, -0.08)
+            leg_pos = 'upper center'
+            leg_cols= 10
+        
+        # style plot    
+        plt.legend(loc=leg_pos, bbox_to_anchor=leg_loc, fontsize=60, ncol=leg_cols, labels=labels)
+        plt.xlabel(str(x), fontsize=60)
+        plt.ylabel(str(y), fontsize=60)
+        plt.title(str(title), fontsize=70)
+        plt.xticks(fontsize=55)
+        plt.yticks(fontsize=55)
+        plt.set_cmap('viridis')
+
+        for axis in ['top','bottom','left','right']:
+            ax.spines[axis].set_linewidth(5)
+
+        
+        # define qmin and qmax
+        if qmin is not None or qmax is not None:
+            if qmin is not None and qmax is None:
+                qmin = qmin
+                qmax = np.max(data_arr[:,1])
+    
+            elif qmin is None and qmax is not None:
+                qmin = np.min(data_arr[:,1])
+                qmax = qmax
+        
+            elif qmin is not None and qmax is not None:
+                qmin = qmin
+                qmax = qmax
+            
+        # define imin and imax
+        if imin is not None or imax is not None:
+            if imin is not None and imax is None:
+                imin = imin
+                imax = np.max(data_arr[:,2])
+    
+            elif imin is None and imax is not None:
+                imin = np.min(data_arr[:,2])
+                imax = imax
+        
+            elif imin is not None and imax is not None:
+                imin = imin
+                imax = imax
+            
+        if qmin is not None or qmax is not None or imin is not None or imax is not None:
+            #inset plot
+            a = plt.axes([-5, 0.5, 4, 4])
+        
+            # loop over all curves
+            for i,c in zip(data_arr, colors):
+    
+                # plot data
+                plt.plot(q_arr, i, color=c)
+        
+            # style plot
+            plt.xlabel(str(x), fontsize=60)
+            plt.ylabel(str(y), fontsize=60)
+            plt.xticks(fontsize=55)
+            plt.yticks(fontsize=55)
+            plt.xlim([qmin, qmax])
+            plt.ylim([imin, imax])
+            plt.title(str(title) + ' Zoom', fontsize=70)
+            plt.set_cmap('viridis')
+
+            for axis in ['top','bottom','left','right']:
+                a.spines[axis].set_linewidth(5)
+
+            # mark inset
+            mark_inset(ax, a, loc1=1, loc2=4, fc="none", ec="0.5", linewidth=4)
+            
+        if save is True:
+            make_dir(save_dir)
+            plt.savefig(save_dir + save_name, bbox_inches='tight')
+            
+        plt.show()
+            
+        return
