@@ -563,7 +563,7 @@ def saxs_scale(ref, scale, dataset, err=False, delim=',', mask=0, qmin=1.5, qmax
 
     
         # save scaled curve
-        np.savetxt(str(outdir) + '/' + str(dataset) + '_buff_scale.csv', 
+        np.savetxt(str(outdir) + '/' + str(dataset) + '_scaled.csv', 
                    np.c_[buf[:, 0], scaled, buf_err], delimiter=",")
 
         # plot data prior to scaling
@@ -609,7 +609,7 @@ def saxs_scale(ref, scale, dataset, err=False, delim=',', mask=0, qmin=1.5, qmax
     return scaled
 
 def saxs_sub(ref, data, delim_ref=',', delim_data=',', err=False, ref_skip=1, data_skip=1,
-             outfile=None, outdir=','):
+             outfile=None, outdir='./'):
     '''
     A function to correct SAXS scattering curve by subtracting a reference scattering curve.
     Input reference and data are assumed to be a SAXS scattering curve output from bootstrap
