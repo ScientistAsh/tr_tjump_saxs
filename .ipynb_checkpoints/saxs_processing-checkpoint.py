@@ -318,9 +318,13 @@ def remove_outliers(flist, olist, fslice=None):
                     print(str(f) + '\033[91m is an outlier\033[91m')
                     if o[fs[0]:fs[1]] in f[fs[0]:fs[1]]:
                         cleaned.remove(f)
+                    else:
+                        print('\033[1;92mOutlier file not removed because outlier file is not in file list. Ignore warnings about mismatch between number of outlier files remaining \033[1;92m')
     
     if len(cleaned) == len(flist) - len(olist):
         print('\033[1;92mNumber of files remaining after outliers removed: \033[1;92m' + str(len(cleaned)))
+        
+    
     
     else:
         print('\033[1;91mWARNING! Number of files remaining after outliers removed: ' + str(len(cleaned)) + ' does not match the number expected based on the size of input file and outlier lists\033[1;91m')
