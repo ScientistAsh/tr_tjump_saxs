@@ -316,7 +316,8 @@ def remove_outliers(flist, olist, fslice=None):
                 # remove outliers
                 if f[fs[0]:fs[1]] in o[fs[0]:fs[1]]:
                     print(str(f) + '\033[91m is an outlier\033[91m')
-                    cleaned.remove(f)
+                    if o[fs[0]:fs[1]] in f[fs[0]:fs[1]]:
+                        cleaned.remove(f)
     
     if len(cleaned) == len(flist) - len(olist):
         print('\033[1;92mNumber of files remaining after outliers removed: \033[1;92m' + str(len(cleaned)))
@@ -326,7 +327,7 @@ def remove_outliers(flist, olist, fslice=None):
            
     return cleaned, olist 
 
-def saxs_scale(ref, scale, dataset, err=False, delim=',', mask=0, qmin=1.5, qmax=2.6, outdir='./'):
+def saxs_scale(ref, scale, dataset, err=False, delim=',', mask=0, qmin=1.5, qmax=2.6, outfile=None, outdir=None):
     '''
     Function to scale a curve to a reference curve. Scaling is based on 
     and algebraic method using the equation:
@@ -350,7 +351,7 @@ def saxs_scale(ref, scale, dataset, err=False, delim=',', mask=0, qmin=1.5, qmax
         
     dataset : str
         String to describe the dataset that is being processed. Will be used
-        in plot titles and output file names. 
+        in plot titles and file names. 
         
     err (optional) : bool
         Boolean indicating if the file containing the curves also contain errors 
@@ -369,9 +370,13 @@ def saxs_scale(ref, scale, dataset, err=False, delim=',', mask=0, qmin=1.5, qmax
         
     qmax (optional) : float
         Maxmimum Q value for curve scaling. Default value is 2.6 Å^-1. 
+        
+    outfile (optional) : str
+        Name to use for output scaled curve file. When set to None, no output curves will be saved. Default
+        value is None.
 
     outdir (optional) : str
-        Path to directory where scaled curve will be saved. Default value is current
+        Path to directory where output files will be saved. Default value is current
         working directory. 
         
     Returns:
@@ -394,7 +399,7 @@ def saxs_scale(ref, scale, dataset, err=False, delim=',', mask=0, qmin=1.5, qmax
     ----------
     scaled = saxs_scale(ref='/datacommons/dhvi-md/TR_T-jump_SAXS_Mar2023/Complex10.17-I5_TSeries-11_44C/processed/Complex10.17-I5_TSeries-11_44C_100ms_001_Q.chi',
                         scale='/datacommons/dhvi-md/TR_T-jump_SAXS_Mar2023/Complex10.17-I5_TSeries-11_44C/processed/Complex10.17-I5_TSeries-11_44C_-5us_001_Q.chi', 
-                        dataset='test', err=False, delim=' ', mask=12, qmin=1.4, qmax=1.6, outdir='./tmp/')
+                        dataset='test', err=False, delim=' ', mask=12, qmin=1.4, qmax=1.6, outfile='scaled.csv', outdir='./tmp/')
     
     scaled
     > array([8.59403483, 8.28879774, 7.95483028, ..., 0.95764088, 0.95691427,
@@ -429,6 +434,9 @@ def saxs_scale(ref, scale, dataset, err=False, delim=',', mask=0, qmin=1.5, qmax
         
         if not isinstance(qmax, float):
             raise TypeError('TypeError: qmax must be int type. Try again...')
+            
+        if not isinstance(outfile, str):
+            raise TypeError('TypeError: outfile must be str type. Try again...')
             
         if not isinstance(outdir, str):
             raise TypeError('TypeError: outdir must be str type. Try again...')
@@ -477,7 +485,11 @@ def saxs_scale(ref, scale, dataset, err=False, delim=',', mask=0, qmin=1.5, qmax
                 print('\033[93mTypeError: Enter a new int value for qmax: \033[93m')
                 qmax = float(input())
                 
-            elif e.args[0][11] == 'o':
+            elif e.args[0][14:18] == 'file':
+                print('\033[93mTypeError: Enter a new str value for outfile name: \033[93m')
+                dataset = input()
+                
+            elif e.args[0][14:17] == 'dir':
                 print('\033[93mTypeError: Enter a new str value for outdir path: \033[93m')
                 dataset = input()
                 
@@ -505,7 +517,7 @@ def saxs_scale(ref, scale, dataset, err=False, delim=',', mask=0, qmin=1.5, qmax
         plt.plot(prot[:,0], prot[:,1], label='reference')
         plt.plot(buf[:,0], buf[:,1], label='pre-scale')
         plt.legend(loc='best', fontsize=60)
-        plt.xlabel('Scattering Vector ' + r'$^{-1}$' + ')', fontsize=60)
+        plt.xlabel('Scattering Vector (Å' + r'$^{-1}$' + ')', fontsize=60)
         plt.ylabel('Scattering Intensity', fontsize=60)
         plt.title(str(dataset) + ' Before Scaling', fontsize=70)
         plt.xticks(fontsize=55)
@@ -516,7 +528,7 @@ def saxs_scale(ref, scale, dataset, err=False, delim=',', mask=0, qmin=1.5, qmax
         plt.plot(prot[:,0], prot[:,1], label='protein')
         plt.plot(buf[:,0], buf[:,1], label='buffer')
         plt.legend(loc='best', fontsize=60)
-        plt.xlabel('Scattering Vector ' + r'$^{-1}$' + ')', fontsize=60)
+        plt.xlabel('Scattering Vector (Å' + r'$^{-1}$' + ')', fontsize=60)
         plt.ylabel('Scattering Intensity', fontsize=60)
         plt.title(str(dataset) + ' Before Scaling', fontsize=70)
         plt.xticks(fontsize=55)
@@ -561,11 +573,6 @@ def saxs_scale(ref, scale, dataset, err=False, delim=',', mask=0, qmin=1.5, qmax
         else:
             buf_err = np.zeros(shape=(scaled.shape))
 
-    
-        # save scaled curve
-        np.savetxt(str(outdir) + '/' + str(dataset) + '_scaled.csv', 
-                   np.c_[buf[:, 0], scaled, buf_err], delimiter=",")
-
         # plot data prior to scaling
         ax = plt.axes([0.125,0.125, 5, 5])
         plt.plot(prot[:,0], prot[:,1], label='reference')
@@ -598,10 +605,14 @@ def saxs_scale(ref, scale, dataset, err=False, delim=',', mask=0, qmin=1.5, qmax
         # mark inset
         mark_inset(ax, a, loc1=1, loc2=4, fc="none", ec="0.5", 
                    linewidth=4)
-
-        #save plot
-        plt.savefig(outdir + '/PLOTS/' + str(dataset) + '_after_scale.png', 
-                    bbox_inches='tight')
+        
+        if outfile is not None:
+            # save scaled curve
+            np.savetxt(str(outdir) + '/' + str(outfile), np.c_[buf[:, 0], scaled, buf_err], delimiter=",")
+        
+            #save plot
+            plt.savefig(str(outdir) + '/PLOTS/' + str(dataset) + '_after_scale.png', 
+                        bbox_inches='tight')
     
         # show figure
         plt.show()
