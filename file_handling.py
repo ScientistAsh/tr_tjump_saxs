@@ -177,6 +177,32 @@ def make_flist(directory='./', prefix=None, suffix=None):
     return files
 
 
+def unique_set(lst):
+    '''
+    Function to return a unique set of curves. Useful for outlier detection analysis so that
+    both laser on and laser off outliers can be subtracted fro data sets without returning
+    value_errors.
+    
+    Parameters:
+    -----------
+    lst : list
+        list containing the set of files containing duplicate curve replicates. 
+        
+    Returns:
+    --------
+    unique : list
+        List containing the unique set of curves. 
+    '''
+    numbers = set()
+    unique = []
+
+    for e in lst:
+        number = e[-9:-6]
+        if number not in numbers:
+            numbers.add(number)
+            unique.append(e)
+
+    return unique
 
 
 
