@@ -205,6 +205,31 @@ def unique_set(lst):
     return unique
 
 
+def sort_key(file_path):
+    '''
+    Function to sort a file list from shortest to longest time delays.
+    
+    Parameters:
+    ------------
+    file_path : list
+        List containing the files to be sorted
+        
+    Returns:
+    --------
+    file_path : list
+        The input file is returned as a sorted list with the shortest time delays
+        preceeding longer time delays. 
+    '''
+    time_str = file_path.split('/')[-1].split('_')[0]
+    if time_str.endswith('us'):
+        return int(time_str[:-2])
+    elif time_str.endswith('ms'):
+        return int(time_str[:-2]) * 1000
+    else:
+        return float('inf')  # Place any other files at the end
+    
+    
+    
 
 def load_saxs(file, delim=' ', mask=0):
     '''
