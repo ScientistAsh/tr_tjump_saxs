@@ -142,7 +142,7 @@ def guinier_analysis(file, label, delim=',', mask=0, qmax=0.0025):
     
     # select qmin and qmax
     print('Running Guinier Analysis...')
-    qmin = np.min(q)
+    qmin = np.min(curve[:, 0])
     
     # define x and y values
     x = curve[:,0]**2
@@ -185,10 +185,11 @@ def guinier_analysis(file, label, delim=',', mask=0, qmax=0.0025):
     # make plot 
     plt.scatter(x[:xmax], y[:xmax], label='Data', s=500, color='grey', zorder=1)
     plt.plot(x_masked, model, label='Linear Fit', linewidth=10, color='red', zorder=-1)
+    #plt.yscale('log')
     
     # style plot
     plt.xlabel('q$^2$', fontsize=60, fontweight='bold')
-    plt.ylabel('q$^2$I', fontsize=60, fontweight='bold')
+    plt.ylabel('ln(I)', fontsize=60, fontweight='bold')
     plt.xticks(fontsize=50)
     plt.yticks(fontsize=50)
     plt.title(str(label) + ' Guinier Analysis', fontsize=70, fontweight='bold')
@@ -206,10 +207,11 @@ def guinier_analysis(file, label, delim=',', mask=0, qmax=0.0025):
     # make plot 
     plt.scatter(x[:xmax], y[:xmax], label='Data', s=500, color='grey', zorder=1)
     plt.plot(x_masked, model, label='Linear Fit', linewidth=10, color='red', zorder=-1)
+    #plt.yscale('log')
     
     # style plot
     plt.xlabel('q$^2$', fontsize=60, fontweight='bold')
-    plt.ylabel('q$^2$I', fontsize=60, fontweight='bold')
+    plt.ylabel('ln(I)', fontsize=60, fontweight='bold')
     plt.xticks(fontsize=50)
     plt.yticks(fontsize=50)
     plt.title(str(label) + ' Guinier Analysis', fontsize=70, fontweight='bold')
