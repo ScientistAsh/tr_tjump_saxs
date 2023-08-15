@@ -110,8 +110,10 @@ def saxs_auc(flist, times=[1.5, 3, 5, 10, 50, 100, 300, 500, 1000],
     -------
     ImportError :
         When the scipy package is not found
+        
     FileNotFoundError : 
         When input file is not found
+        
     ValueError : 
         When input file format or delimiter is 
         wrong
@@ -163,7 +165,7 @@ def saxs_auc(flist, times=[1.5, 3, 5, 10, 50, 100, 300, 500, 1000],
             data = load_saxs(file=f, delim=delim, mask=0)
 
             # filter q range for integration
-            filtered = data[(data[:,0] >= 0.02) & (data[:,0] <= 0.3)]
+            filtered = data[(data[:,0] >= qmin) & (data[:,0] <= qmax)]
 
             # calculate area under the curve
             area = scipy.integrate.simpson(filtered[:,1], filtered[:,0])
@@ -205,3 +207,512 @@ def saxs_auc(flist, times=[1.5, 3, 5, 10, 50, 100, 300, 500, 1000],
         print("An error occurred:", str(e))
 
     return auc
+
+
+
+def svd_kinectics(flist, delim=',', times=[1.5,3,5,10,50,100,300,500,1000], 
+                  time_unit='us', outdir=None):
+    '''
+    Function to perform SVD on SAXS curves to identify outliers 
+    and save the outliers to a txt file. Saves the right and 
+    left vectors as a CSV file.
+    
+    Parameters:
+    -----------
+    flist : list
+        List contining files, with full path, containing data to run SVD on. 
+        Assumes that the input files contain 
+        
+    times (optional) : list
+        List of times included in SVD. Default value is 10, 50, 100, 500, and 100 
+        microseconds. 
+        
+    time_unit (optional) : str
+        Unit for times included in SVD. Default value is us for microseconds. 
+        
+    outdir (optional) : str
+        Name of directory to store output plots to. A scree plot is output
+        along with output plots of both the first two left vectors and the
+        first two right vectors will be made, with the left and right vectors
+        in separate plots. CSV files of the right and left vectors are also saved. 
+        If set to None, then no outfile will be saved. Default value is None. 
+        
+    Returns:
+    -------- 
+    u :  array. 
+        The first a.ndim - 2 dimensions have the same size as those 
+        of the input.
+        
+    s : array
+        Vector with the singular values, within each vector sorted in 
+        descending order. The first a.ndim - 2 dimensions have the same size
+        as those of the input.
+        
+    v : array
+        Unitary array. The first a.ndim - 2 dimensions have the same size as 
+        those of the input. 
+    
+    
+    '''
+    # create empty vectors list
+    vectors = []
+    
+    # load data
+    print('Loading Data...')
+
+    # load data
+    print('Loading Data...')
+    for f in flist:
+        curve = load_saxs(file=f, delim=delim, mask=0)
+
+        # append curve to vector list
+        vectors.append((curve[:,1]))
+    # get q
+    q = curve[:,0]
+    
+    # svd calculation
+    print('Running SVD...')
+    matrix = np.matrix([i for i in vectors]).transpose()    
+    u,s,v = svd(matrix, full_matrices=False)
+    
+    # make scree plot
+    eigvals = s**2 / np.sum(s**2)  
+    ax1 = plt.axes([0.125,0.125, 5, 5])
+    sing_vals = np.arange(len(flist))
+    plt.plot(sing_vals, eigvals, 'ro-', linewidth=5)
+    plt.title('Scree Plot', fontsize=70)
+    plt.xlabel('Components', fontsize=60)
+    plt.ylabel('Eigenvalue', fontsize=60)
+    plt.xticks(fontsize=55)
+    plt.yticks(fontsize=55)
+    plt.legend(['Eigenvalues from SVD'], loc='best', borderpad=0.3, 
+               shadow=False, fontsize=60,
+               markerscale=0.4)
+    
+    # save scree plot
+    if outdir is not None:
+        make_dir(str(outdir) + '/PLOTS/')
+        outfile = 'scree.png'
+        plt.savefig(str(outdir + '/PLOTS/' + outfile), bbox_inches='tight')
+    
+    # show plot    
+    plt.show()
+
+        
+    # plot first two left vectors
+    plt.clf()
+    ax2 = plt.axes([0.125,0.125, 5, 5])
+    plt.plot(q, (u[:,0]), label='LV1', linewidth=5)
+    plt.plot(q, (u[:,1]), label='LV2', linewidth=5)
+    plt.title('SVD Left Vectors', fontsize=70)
+    plt.xlabel('Q (Å' + r'$^{-1}$' + ')', fontsize=60)
+    plt.ylabel('L Vectors', fontsize=60)
+    plt.xticks(fontsize=55)
+    plt.yticks(fontsize=55)
+    plt.xlim([0.0, 1.0])
+    plt.legend()
+    
+    # save left vector plot
+    if outdir is not None:
+        outfile = 'left_vectors.png'
+        plt.savefig(str(outdir + '/PLOTS/' + outfile), bbox_inches='tight')
+        
+    # show plot
+    plt.show()
+    
+    # convert u and v to array
+    lu = np.asarray(u)
+    lv = np.asarray(v)
+    timer = np.asarray(times)
+    
+    # plot first 2 right vectors
+    ax3 = plt.axes([0.125,0.125, 5, 5])
+    
+    plt.plot(timer, lv[0], label='RV1', linewidth=5)
+    plt.plot(timer, lv[1], label='RV2', linewidth=5)
+    plt.xlabel('time (' + r'$\mu$' + 's)', fontsize=60)
+    plt.title('SVD Right Vectors', fontsize=70)
+    plt.ylabel('R Vectors', fontsize=60)
+    plt.xticks(fontsize=55)
+    plt.yticks(fontsize=55)
+    plt.legend(loc='best', fontsize=60)
+    
+    # save right vector plot
+    if outdir is not None:
+        outfile = 'Rvectors.png'
+        plt.savefig(str(outdir + '/PLOTS/' + outfile), bbox_inches='tight')
+     
+    # show plot
+    plt.show()
+    
+    # save right and left vectors as csv
+    np.savetxt(str(outdir) + 'right_vectors.csv', 
+               lv, delimiter=",")
+    np.savetxt(str(outdir) + 'left_vectors.csv', 
+               lu, delimiter=",")
+    
+    return u, s, v
+
+
+def auc_fit(file, x, columns=None, delim=',', skip=0, func='double', iterations=2000,
+            xlab='Time Delay $\mu$s', ylab='Area Under the Curve\n(Simpsons Rule)',
+            xlogscale=True, ylogscale=False, outdir=None, outfile='fit',
+            plot_title='CH505TF SAXS T-Jumps Area Under the Curve\nExponential Fit'):
+    '''
+    Description:
+    ------------
+    Function to fit curve to either an exponential decay or double exponential
+    decay. The single exponential decay function takes the form:
+                        a * np.exp(-b * x) + c
+                        
+    and the the double exponential decay funtion takes the form:
+            a * (np.exp(-b * x)) + c * (np.exp(-d * x)) + e
+            
+    The function will return the fit and plot the fit overlayed with input data. 
+    Function is based on the scipy.optimize.curve_fit() function and returns the values
+    for the fitted parameters. The function will also automatically determine the values
+    for tau using the following equations:
+                            tau_fast = 1 / b
+                            tau_slow = 1 / d
+    
+    Parameters:
+    -----------
+    file : str
+        String containing the file name, with full path, containing ydata to be fit. 
+        
+    x : np.array
+        Numpy array containing the X-data. 
+        
+    columns (optional) : int or list of int
+        Columns to be loaded from the input file. Columns are 0 indexed. If set to
+        None, then all columns will be loaded. Default value is None. 
+        
+    skip (optional) : int
+        Row's to skip. Data is loaded as a numpy array so headers cannot be loaded.
+        skip=0 then all rows will be loaded. Default value is 0.   
+    
+    func (optional) : str
+        What type of function to fit to data. Accepts either 'double' for double 
+        exponential decay fit or 'single' for single exponential decay fit. Will raise
+        and ValueError for incorrect value. 
+        
+    iterations (optional) : int
+        Number of iterations to run the scipy.optimize.curve_fit. Default value is 2000. 
+        
+            
+    xlab (optional) : str
+        Label to use for X-axis in plot. Default value is 'Time Delay (us).'
+    
+    ylab (optional) : str
+        Label to us for Y-axis in plot. Default value is 'Area Under the Curve\nSimpsons Rule'
+        
+    xlogscale (optional) : bool
+        Boolean to indicate if a log scale should be used on the x axis. If set to False then 
+        the absolute values will be used. Default value is True.
+        
+    ylogscale (optional) : bool
+        Boolean to indicate if a log scale should be used on the y-axis. If set to False then
+        the absolute values will be used. Default value is False. 
+        
+    outdir (optional) : str
+        Location to save plot and modeled curve. If set to None then no CSV or PNG plot files
+        will be saved. Default value is None. 
+        
+    outfile (optional) : str
+        Prefix to use for file names. CSV files containing the fitted curve will be saved with 
+        the '.csv' suffix and plot files will be saved with the '.png' suffix. Default value is 
+        'fit'. 
+    
+    plot_title (optional) : str
+        Label to use for title of plot. Default value is 'CH505TF SAXS T-Jumps Area Under the Curve'
+        
+        
+    Returns:
+    
+    model : np.array
+        Model of fit. 
+        
+    popt : np.array
+        Values of funcotional parameters determined from exponential fit. 
+        
+    '''
+    
+    # Define single exponential decay function
+    def single(x, a, b, c):
+        return a * np.exp(-b * x) + c
+    
+    # define double exponential decay function
+    def double(x, a, b, c, d, e):
+        return a * (np.exp(-b * x)) + c * (np.exp(-d * x)) + e
+    
+    # load data
+    ydata = np.loadtxt(fname=file, usecols=columns, delimiter=delim, skiprows=skip) 
+    
+    # define x data
+    xdata = np.array(x)
+    
+    # fit data to exponential function
+    if func == 'single':
+        popt, pcov = scipy.optimize.curve_fit(single, xdata, ydata, maxfev=iterations)
+        model = single(np.linspace(min(xdata), max(xdata), int(max(xdata))), *popt)
+        tau = 1 / popt[1]
+        params =['span', 'k', 'plateau', 'tau']
+        popt = np.append(popt, tau)
+        
+    elif func == 'double':
+        popt, pcov = scipy.optimize.curve_fit(double, xdata, ydata, maxfev=iterations)
+        model = double(np.linspace(min(xdata), max(xdata), int(max(xdata))), *popt)
+        tau_fast = 1 / popt[1]
+        tau_slow = 1 / popt[3]
+        params = ['span_fast', 'kfast', 'span_slow', 'kslow', 'plateau', 'tau_fast', 'tau_slow']
+        popt = np.append(popt, tau_fast)
+        popt = np.append(popt, tau_slow)
+   
+    else:
+        raise ValueError('Invalid function type. Expected one of: single, double')
+    
+    # plot data
+    ax = plt.axes([0.125,0.125, 5, 5])
+    plt.scatter(xdata, ydata, marker='o', s=500, label='data', color='grey')
+    plt.plot(model, linestyle='-', color='red', label='fit')
+    plt.xlabel(xlab, fontsize=50, fontweight='bold')
+    plt.ylabel(ylab, fontsize=50, fontweight='bold')
+    plt.xticks(fontsize=45)
+    plt.yticks(fontsize=45)
+    plt.title(plot_title, fontsize=70, fontweight='bold')
+    if xlogscale is True:
+        plt.xscale('log')
+    if ylogscale is True:
+        plt.yscale('log')
+    plt.legend(loc='best', borderpad=0.3, shadow=False, fontsize=60,
+               markerscale=1)
+
+    # save figure
+    if outdir is not None:
+        make_dir(f=outdir)
+        plt.savefig(str(outdir) + '/' + str(outfile) + '.png', bbox_inches='tight')
+        
+    plt.show()
+    
+    # save model curve
+    if outdir is not None:
+        df = pd.DataFrame(data=[params, popt])
+        df.to_csv(str(outdir) + '/' + str(outfile) + '.csv')
+        
+    return popt
+
+
+def svd_fit(file, x, delim=',', row=0, func='double', iterations=2000,
+            xlab='Time Delay $\mu$s', ylab='% Contribution',
+            xlogscale=True, ylogscale=False, outdir=None, outfile='fit',
+            plot_title='CH505TF SAXS T-Jumps First Right Vector\nExponential Fit'):
+    '''
+    Description:
+    ------------
+    Function to fit curve to either an exponential decay or double exponential
+    decay. The single exponential decay function takes the form:
+                        a * np.exp(-b * x) + c
+                        
+    and the the double exponential decay funtion takes the form:
+            a * (np.exp(-b * x)) + c * (np.exp(-d * x)) + e
+            
+    The function will return the fit and plot the fit overlayed with input data. 
+    Function is based on the scipy.optimize.curve_fit() function and returns the values
+    for the fitted parameters. The function will also automatically determine the values
+    for tau using the following equations:
+                            tau_fast = 1 / b
+                            tau_slow = 1 / d
+    
+    Parameters:
+    -----------
+    file : str
+        String containing the file name, with full path, containing ydata to be fit. 
+        
+    x : np.array
+        Numpy array containing the X-data. 
+        
+    delim (optional) : str
+        Delimitter used in file to load. Default value is comma. 
+        
+    row (optional) : int
+        Row containing right vector to fit. Rows are 0 indexed. Default value is 0, 
+        which corresponds to the first right vector. 
+    
+    func (optional) : str
+        What type of function to fit to data. Accepts either 'double' for double 
+        exponential decay fit or 'single' for single exponential decay fit. Will raise
+        and ValueError for incorrect value. 
+        
+    iterations (optional) : int
+        Number of iterations to run the scipy.optimize.curve_fit. Default value is 2000. 
+        
+            
+    xlab (optional) : str
+        Label to use for X-axis in plot. Default value is 'Time Delay (us).'
+    
+    ylab (optional) : str
+        Label to us for Y-axis in plot. Default value is '% Contribution'
+        
+    xlogscale (optional) : bool
+        Boolean to indicate if a log scale should be used on the x axis. If set to False then 
+        the absolute values will be used. Default value is True.
+        
+    ylogscale (optional) : bool
+        Boolean to indicate if a log scale should be used on the y-axis. If set to False then
+        the absolute values will be used. Default value is False. 
+        
+    outdir (optional) : str
+        Location to save plot and modeled curve. If set to None then no CSV or PNG plot files
+        will be saved. Default value is None. 
+        
+    outfile (optional) : str
+        Prefix to use for file names. CSV files containing the fitted curve will be saved with 
+        the '.csv' suffix and plot files will be saved with the '.png' suffix. Default value is 
+        'fit'. 
+    
+    plot_title (optional) : str
+        Label to use for title of plot. Default value is 'CH505TF SAXS T-Jumps First Right Vector\n
+        Exponential Fit'
+        
+        
+    Returns:
+    
+    model : np.array
+        Model of fit. 
+        
+    popt : np.array
+        Values of funcotional parameters determined from exponential fit. 
+        
+    '''
+    
+    # Define single exponential decay function
+    def single(x, a, b, c):
+        return a * np.exp(-b * x) + c
+    
+    # define double exponential decay function
+    def double(x, a, b, c, d, e):
+        return a * (np.exp(-b * x)) + c * (np.exp(-d * x)) + e
+    
+    # load data
+    data = np.loadtxt(fname=file, delimiter=delim) 
+    ydata = data[row]
+    
+    # define x data
+    xdata = np.array(x)
+    
+    # fit data to exponential function
+    if func == 'single':
+        popt, pcov = scipy.optimize.curve_fit(single, xdata, ydata, maxfev=iterations)
+        model = single(np.linspace(min(xdata), max(xdata), int(max(xdata))), *popt)
+        tau = 1 / popt[1]
+        params =['span', 'k', 'plateau', 'tau']
+        popt = np.append(popt, tau)
+        
+    elif func == 'double':
+        popt, pcov = scipy.optimize.curve_fit(double, xdata, ydata, maxfev=iterations)
+        model = double(np.linspace(min(xdata), max(xdata), int(max(xdata))), *popt)
+        tau_fast = 1 / popt[1]
+        tau_slow = 1 / popt[3]
+        params = ['span_fast', 'kfast', 'span_slow', 'kslow', 'plateau', 'tau_fast', 'tau_slow']
+        popt = np.append(popt, tau_fast)
+        popt = np.append(popt, tau_slow)
+   
+    else:
+        raise ValueError('Invalid function type. Expected one of: single, double')
+    
+    # plot data
+    ax = plt.axes([0.125,0.125, 5, 5])
+    plt.scatter(xdata, ydata, marker='o', s=500, label='data', color='grey')
+    plt.plot(model, linestyle='-', color='red', label='fit')
+    plt.xlabel(xlab, fontsize=50, fontweight='bold')
+    plt.ylabel(ylab, fontsize=50, fontweight='bold')
+    plt.xticks(fontsize=45)
+    plt.yticks(fontsize=45)
+    plt.title(plot_title, fontsize=70, fontweight='bold')
+    if xlogscale is True:
+        plt.xscale('log')
+    if ylogscale is True:
+        plt.yscale('log')
+    plt.legend(loc='best', borderpad=0.3, shadow=False, fontsize=60,
+               markerscale=1)
+
+    # save figure
+    if outdir is not None:
+        make_dir(f=outdir)
+        plt.savefig(str(outdir) + '/' + str(outfile) + '.png', bbox_inches='tight')
+        
+    plt.show()
+    
+    # save model curve
+    if outdir is not None:
+        df = pd.DataFrame(data=[params, popt])
+        #np.savetxt(str(outdir) + '/' + str(outfile) + '.csv', np.c_[params, popt], delimiter=",")
+        df.to_csv(str(outdir) + '/' + str(outfile) + '.csv')
+        
+    return popt
+
+
+def auc_bs(auc_data, time_delay, outdir, cl=0.95 ):
+    '''
+    Function to determine confidence interval and standard 
+    error by bootstrapping. Results saved to a text file.
+    
+    Parameters:
+    -----------
+    
+    auc_data : list
+        List containing AUC data for bootstrapping.
+    
+    time_delay : str
+        Time delay for data. 
+        
+    outdir : str
+        Directory to save data to.
+            
+    cl (optional) : float
+        Confidence level for bootstrapping. Defualt value
+        is 0.95. 
+        
+    Returns:
+    --------
+    bs.confidence_interval : Bootstrap confidence interval
+        Instance of collections.namedtuple
+        
+    bs.standard_error : Bootstrap standard error
+        Standard deviation of bootstrap distribution
+        
+    cl : confidence level
+        Condifence level used for bootstrapping.
+    '''
+    
+    # set variables for saving files
+    # future addition
+    
+    # define method for sampling 
+    rng = np.random.default_rng()
+    
+    # convert auc to array
+    auc_arr = np.array(auc_data)
+    
+    # get statistics from auc data
+    std_sample = np.std(auc_arr) 
+    mean_sample = np.mean(auc_arr)
+    # print statistics
+    print('Mean: ' + str(mean_sample) + ' +/- ' + str(std_sample))
+    
+    # convert data to sequence for bootstrap function input
+    seq = (auc_arr,)
+    
+    # bootstrap over auc data
+    bs = bootstrap(seq, np.mean, confidence_level=cl,
+                random_state=rng)
+    # print confidence interval and SEM
+    print([bs.confidence_interval, 
+           'Standard error: ' + str(bs.standard_error)])
+    
+    with open(str(outdir + time_delay) + '.txt', "w") as output:
+        output.write("%s \n %s \n %s \n %s" % ('Time delay: ' + str(time_delay), 
+                                            'Mean +/- std: ' + str(mean_sample) + ' +/- ' + str(std_sample),
+                                            'Confidence Interval: ' + str(bs.confidence_interval),
+                                           'Standard Error: ' + str(bs.standard_error)))
+    return bs.confidence_interval, bs.standard_error, cl

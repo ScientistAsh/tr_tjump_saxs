@@ -222,6 +222,81 @@ def svd_outliers(arr, flist, q, cutoff=2.5, save_dir='./OUTLIERS/',
     return outlier_files, outliers
 
 
+def iterative_chi(arr, flist, chi_cutoff=1.5, outfile='outliers.csv', calls=1):
+    '''
+    Parameters:
+    -----------
+    arr : np.array
+        Array containing scattering data to run iterative chi square test on. 
+        
+    flist : list
+        Files associated with scattering data in input data array. 
+        
+    chi_cutoff (optional) : float
+        Chi value to use as cutoff for determining outliers. All curves with a 
+        chi value greater than the the chi_cutoff will be counted as outliers. 
+        The default value is 1.5. 
+        
+    outfile (optional) : str
+        File name, including full path, of where to store the outlier list. The 
+        default value is a file 'outfiles.csv' in the current working directory. 
+
+    calls (optional) : int
+        Starting chi iteration number. Calls tracks the number of iterations run. 
+        
+        
+    Returns:
+    --------
+    '''
+    
+    # Calculate average curve
+    avg_curve = arr.mean(axis=0)
+    
+    # Calculate standard deviation
+    std = arr.std(axis=0)
+    
+    # Get n
+    n = arr.shape[1]
+    
+    # Calculate chi sqaure value
+    chi = np.sum( (arr - avg_curve)**2 / std**2 , axis=1) / (n-1)
+
+    # Find outliers
+    diff_outliers = np.where(chi >= chi_cutoff)
+    print('Iteration: ' + str(calls))
+    print('Number of outliers found: ' + str(len(diff_outliers[0])))
+    
+    # remove outliers from data array
+    arr = np.delete(arr, diff_outliers, axis=0)
+    print('Number of laser on files left: ' + str(len(arr)))
+    
+    # save outlier file list
+    outlier_files = []
+    
+    for d in diff_outliers[0]:
+        print(flist[d])
+        outlier_files.append(flist[d])
+
+    
+    # Write outlier files list to files
+    with open(outfile, "a") as a:
+        for f in outlier_files:
+            a.write(str(f) + "\n")
+        
+    # remove outliers from data file list
+    for f in flist:
+        if f in outlier_files:
+            flist.remove(f)
+            
+    
+    # Iterate
+    if len(diff_outliers[0]) == 0:
+        return 
+        
+    else:
+        iterative_chi(arr, flist, chi_cutoff, outfile, calls+1)
+
+
 def remove_outliers(flist, olist, fslice=None):
     '''
     Function to remove outlier files from a file list. Function
@@ -732,3 +807,152 @@ def saxs_sub(ref, data, delim_ref=',', delim_data=',', err=False, ref_skip=1, da
                        delimiter=',')
     
     return ref, data, correction
+
+
+def auc_outlier(time_delay, file, upper=0.75, lower=0.25, delim=',',f_col='file', 
+                auc_col='auc_simpsons', outdir='./'):
+    '''
+    Function to find outliers for SAXS difference curves based on
+    area under the curve calculations. Determines the outliers by 
+    finding images with AUC that are outside the interquartile range 
+    for the input time delay AUC. Boxplot of data is also produced. 
+    Detected outliers will be saved to CSV file, as will the data 
+    with the outliers removed. 
+    
+    Parameters:
+    ------------
+    time_delay : str
+        Time delay for input data set. 
+        
+    file : str
+        File containing the area under
+        the curve calculations for each
+        file in a SAXS time delay data 
+        set. The input data should be a 
+        CSV file with the file name and 
+        AUC calculation. 
+        
+    upper (optional) : float
+        Value to define upper quantile. 
+        Default is 0.75.
+        
+    lower (optional) : float
+        Valur to define the lower quantile.
+        Default is 0.25.
+        
+    delim (optional) : str
+        Delimiter used in input CSV file. 
+        Default value is ','. 
+        
+    f_col (optional) : str
+        Name of column containing file name 
+        in input CSV file. Default column 
+        name is 'file'. 
+        
+    auc_col (optional) : str
+        Name of column containing the AUC 
+        calculation in inut CSV file. Default 
+        column name is 'auc_simpsons'. 
+        
+    outdir (optional) : str
+        Name of directory to store output files 
+        contraining detected outliers including 
+        full path. Default is current working directory. 
+        The default file name will be <time_delay.csv>.
+        If directory doesn't exist, it will be made. 
+
+        
+    Returns:
+    ---------
+    Pandas DataFrame containing file number,
+    file name, and the AUC calculation. 
+    
+    Pandas DataFrame containing the file name
+    and AUC calculation for the difference 
+    curves determined to be outliers. 
+    
+    Pandas DataFrame which is the input DataFrame
+    with the determined outliers removed. 
+    
+    '''
+    # Load auc data as a data frame
+    df = pd.read_csv(file, header=0, delimiter=delim)
+    
+    # Get IQR
+    q1 = df[auc_col].quantile(lower)
+    q3 = df[auc_col].quantile(upper)
+    iqr = q3 - q1
+    
+    # Set outlier detection threshold
+    outlier_top_lim = q3 + 1.5 * (q3 - q1)
+    outlier_bottom_lim = q1 - 1.5 * (q3 - q1)
+    
+    # find outliers
+    outliers = []
+    dat = []
+    for file, auc in zip(df[f_col], df[auc_col]):
+        if (auc > outlier_top_lim) or (auc < outlier_bottom_lim):
+            #print(file, auc)
+            outliers.append([file, auc])
+        else:
+            dat.append([file, auc]) 
+    print(len(outliers))
+            
+    # save outliers to file
+    make_dir(outdir)
+    outlier_outfile = str(outdir + time_delay) + '_outliers.csv'
+    outliers = pd.DataFrame(outliers, columns=['file', 'auc'])
+    outliers.to_csv(outlier_outfile)
+    
+    # save filtered data to file
+    make_dir(outdir)
+    clean_outfile = str(outdir + time_delay) + '_cleaned.csv'
+    clean = pd.DataFrame(dat, columns=['file', 'auc'])
+    clean.to_csv(clean_outfile)
+    
+    # plot data
+    sns.boxplot(y=df[auc_col])
+    for file, auc in zip(df[f_col], df[auc_col]):
+        if (auc > outlier_top_lim) or (auc < outlier_bottom_lim):
+            plt.text(.5, auc, f' {file}', ha='left', va='center')
+    plt.xlabel(str(time_delay))
+    plt.tight_layout()
+    plt.show()
+    
+    return (df, outliers, dat)
+
+
+def move_outliers(flist, fpath='./', col_name='file', quar_dir='./quar/'):
+    '''
+    Function to move a list of files to a new directory. File names are not changed. Files 
+    moved to designated directory. File list is assumed to be contained within a column
+    of a pandas DataFrame. 
+    
+    Parameters:
+    -----------
+    flist : DataFrame
+        DataFrame in which one column contains the list of files to be moved.
+        
+    fpath (optional) : str
+        Path to directory where loaded files are currently stored. Defualt is current 
+        working directory. 
+        
+    col_name (optional) : str
+        Name of DataFrame column containing file list. Default is 'file'.
+        
+    quar_dir (optional) : str
+        Name of directory, including full path, to move files to. If the directory does 
+        not exist, it will be made. Default is a new directory 'quar' in the current
+        working directory. 
+        
+    Returns:
+    --------
+    
+    '''
+    make_dir(quar_dir)
+    
+    # loop over files in list and move them to new directory
+    for f in flist[col_name]:
+        shutil.move(str(fpath + f), 
+                    str(quar_dir))
+    return
