@@ -642,6 +642,8 @@ def saxs_scale(ref, scale, dataset, err=False, delim=',', mask=0, qmin=1.5, qmax
         s = np.dot(prot_mask[:,1], buf_mask[:, 1])
         unitary = np.dot(prot_mask[:,1], prot_mask[:,1])
         scalar = unitary / s
+        
+
     
         # scale buffer curve
         scaled = buf[:,1] * scalar

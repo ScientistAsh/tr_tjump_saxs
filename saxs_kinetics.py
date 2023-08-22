@@ -43,11 +43,11 @@ import numpy as np
 from scipy.optimize import curve_fit
 
 def saxs_auc(flist, times=[1.5, 3, 5, 10, 50, 100, 300, 500, 1000],
-             delim=',', qmin=None, qmax=None, outdir=None,
+             delim=',', mask=0, qmin=None, qmax=None, outdir=None,
              data_outfile=None, plot_outfile=None,
              xlab='Time Delay ($\mu$s)',
-             plot_title='CH505TF SAXS T-Jumps Area Under the Curve'):
-    
+            plot_title='CH505TF SAXS T-Jumps Area Under the Curve'):
+     
     '''
     Function to calculate the area under the curve for 
     solution x-ray scattering difference curves. The 
@@ -56,7 +56,18 @@ def saxs_auc(flist, times=[1.5, 3, 5, 10, 50, 100, 300, 500, 1000],
     to use the AUC data for further analysis call
     the function inside a variable definition. Plots of 
     the calculated AUC as a function of times will be saved. 
-        
+    
+    ex.1: Continue using data (data will also be saved):
+    a = saxs_auc(flist=files, delim=',', q_min=0, 
+                q_max=0.3, 
+                outdir='../../ANALYSIS/NALYSIS/AUC/', 
+                data_outfile='tjumps_auc.csv',
+                plot_outfile='tjump_auc_plot.png')
+                
+    ex.2: Just save data to csv file:
+    saxs_auc(flist=files, delim=',', q_min=0, q_max=0.3)
+                
+    
     Parameters:
     -----------
     flist : list
@@ -73,12 +84,18 @@ def saxs_auc(flist, times=[1.5, 3, 5, 10, 50, 100, 300, 500, 1000],
         
     delim (optional) : str
         Delimitter used in data files. Default is comma. 
+        
+    mask (optional) : int
+        Number of rows to skip when loading files. Helpful when a mask was
+        applied during data collection and low scattering vector values should
+        not be analyzed. When set to 0 all rows are loaded. Default value 
+        is 0. 
     
-    qmin : float
+    q_min : float
         Q value to begin integration at. If set to None, the will start at lowest
         Q value in input data set. Default value is None. 
         
-    qmax : float
+    q_max : float
         Q value to end integration at. If set to None, the will end at highest
         Q value in input data set. Default value is None. 
     
@@ -104,108 +121,65 @@ def saxs_auc(flist, times=[1.5, 3, 5, 10, 50, 100, 300, 500, 1000],
     Returns:
     --------
     auc : np.array
-        Contains the time delay and calculated AUC values. 
-        
-    Raises:
-    -------
-    ImportError :
-        When the scipy package is not found
-        
-    FileNotFoundError : 
-        When input file is not found
-        
-    ValueError : 
-        When input file format or delimiter is 
-        wrong
-        
-    Examples:
-    ----------
-    ex.1: Continue using data (data will also be saved):
-    a = saxs_auc(flist=files, delim=',', q_min=0, 
-                q_max=0.3, 
-                outdir='../../ANALYSIS/NALYSIS/AUC/', 
-                data_outfile='tjumps_auc.csv',
-                plot_outfile='tjump_auc_plot.png')
-                
-    ex.2: Just save data to csv file:
-    saxs_auc(flist=files, delim=',', q_min=0, q_max=0.3)
+        Contains the time delay and calculated AUC values.  
     '''
     
+    # set variable names
+    auc = []   
+    data = []
     
-    try:
-        import scipy
-    except ImportError:
-        raise ImportError("The 'scipy' module is required to run this function.")
+    # loop over difference files for time_delay in directory
+    for t, f in zip(times, flist):
+        
+        print('\033[94;1mLoading ' + str(f) + '\033[94;1m')
 
-    def make_dir(directory):
-        if not os.path.exists(directory):
-            os.makedirs(directory)
+        # convert time to integer
+        if t[-2:] == 'ms':
+            t = int(t[:-2]) * 1000
+        else:
+            t = int(t[:-2])
+            
+        # load data
+        data = load_saxs(file=f, delim=delim, mask=mask)
+        
+        # filter q range for integration
+        filtered = data[(data[:,0] >= 0.02) & (data[:,0] <= 0.3)]
+            
+        # calculate area under the curve
+        area = scipy.integrate.simpson(filtered[:,1], filtered[:,0])
+        
+        # append area and time delay to auc list
+        auc.append([t, area])
+            
+    # convert auc list to array
+    auc = np.asarray(auc)
+    
+    # store auc calculations to file
+    if outdir is not None:
+        make_dir(outdir)
+        np.savetxt(str(outdir) + str(data_outfile), np.c_[auc[:, 0], auc[:, 1]], delimiter=',',
+                  header='time_delay (us),auc', comments='# AUC Analysis | DHVI | Henderson Lab | ALB | ' + datetime.datetime.now().strftime('%d %B %Y'))
+ 
+    # plot AUC
+    ax = plt.axes([0.125,0.125, 5, 5])
+    plt.plot(times, auc[:, 1], linewidth=10, alpha=0.3)
+    plt.scatter(times, auc[:, 1], marker='o', s=500.)
+    plt.set_cmap('rainbow')
+    plt.xlabel(xlab, fontsize=50, fontweight='bold')
+    plt.ylabel('Area Under the Curve (Simpsons)', fontsize=50, fontweight='bold')
+    plt.xticks(fontsize=45)
+    plt.yticks(fontsize=45)
+    plt.title(plot_title, fontsize=70, fontweight='bold')
 
-    def load_saxs(file, delim=',', mask=0):
-        try:
-            data = np.genfromtxt(file, delimiter=delim, skip_header=mask)
-        except FileNotFoundError:
-            raise FileNotFoundError(f"File '{file}' not found.")
-        except ValueError:
-            raise ValueError(f"Error while reading data from '{file}'. Check the file format and delimiter.")
-        return data
+    for axis in ['top','bottom','left','right']:
+        ax.spines[axis].set_linewidth(5)
 
-    try:
-        # rest of the function code goes here...
+    # save figure
+    if outdir is not None and plot_outfile is not None:
+        plt.savefig(str(outdir + plot_outfile), bbox_inches='tight')
 
-        # set variable names
-        auc = []
-        data = []
-
-        # loop over difference files for time_delay in directory
-        for t, f in zip(times, flist):
-            print('Loading ' + str(f))
-
-            # load data
-            data = load_saxs(file=f, delim=delim, mask=0)
-
-            # filter q range for integration
-            filtered = data[(data[:,0] >= qmin) & (data[:,0] <= qmax)]
-
-            # calculate area under the curve
-            area = scipy.integrate.simpson(filtered[:,1], filtered[:,0])
-
-            # append area and time delay to auc list
-            auc.append([t, area])
-
-        # convert auc list to array
-        auc = np.asarray(auc)
-
-        # store auc calculations to file
-        if outdir is not None:
-            make_dir(outdir)
-            np.savetxt(str(outdir) + '/' + str(data_outfile), 
-                   auc, delimiter=",")
-
-        # plot AUC
-        ax = plt.axes([0.125,0.125, 5, 5])
-        plt.plot(times, auc[:, 1], linewidth=10, alpha=0.3)
-        plt.scatter(times, auc[:, 1], marker='o', s=500.)
-        plt.set_cmap('rainbow')
-        plt.xlabel(xlab, fontsize=50, fontweight='bold')
-        plt.ylabel('Area Under the Curve (Simpsons)', fontsize=50, fontweight='bold')
-        plt.xticks(fontsize=45)
-        plt.yticks(fontsize=45)
-        plt.title(plot_title, fontsize=70, fontweight='bold')
-
-        for axis in ['top','bottom','left','right']:
-            ax.spines[axis].set_linewidth(5)
-
-        # save figure
-        if outdir is not None and plot_outfile is not None:
-            plt.savefig(str(outdir + plot_outfile), bbox_inches='tight')
-
-        plt.show()
-
-    except Exception as e:
-        # Catch any exception that might occur during the execution of the function
-        print("An error occurred:", str(e))
-
+    plt.show()
+   
     return auc
 
 
