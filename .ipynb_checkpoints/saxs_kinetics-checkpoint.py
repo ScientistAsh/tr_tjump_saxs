@@ -41,6 +41,7 @@ from file_handling import *
 
 import numpy as np
 from scipy.optimize import curve_fit
+import datetime
 
 def saxs_auc(flist, times=[1.5, 3, 5, 10, 50, 100, 300, 500, 1000],
              delim=',', mask=0, qmin=None, qmax=None, outdir=None,
