@@ -91,67 +91,32 @@ def svd_outliers(arr, flist, q, cutoff=2.5, save_dir='./OUTLIERS/',
     outliers : list
         List containing the index of scattering outlier curves. The outliers 
         can be removed from a file list with the `remove_outliers` function. 
-        
-    Raises:
-    --------
-    TypeError:
-        When arr is not np.ndarray, flist is not list, cutoff is not float, or save_dir or save_name is 
-        is not str data types. Exception handling will prompt you to enter a new value for the incorrect
-        parameter. 
+
         
     Examples:
     ----------
-    on_outliers = svd_outliers(arr=on_array, flist=on_files, q=q, cutoff=2.5, save_dir='/datacommons/dhvi-md/TR_T-jump_SAXS_Mar2023/ANALYSIS/test_dir/', 
-                               save_name=str(t) + '_svd_outliers.csv')
-    on_outliers
-    > (['/datacommons/dhvi-md/TR_T-jump_SAXS_Mar2023/Trimer10.17Only_Series3_44C/processed_series3_44C_all_images/TrimerOnly_Series-3_44C_5us_030_Q.chi'],
-     [29])
+    outliers_1ms = svd_outliers(arr=data_arr, flist=unique_files, q=q, cutoff=2.5, save_dir='/datacommons/dhvi-md/AshleyB/tmp/', 
+                               save_name='1ms_svd_outliers.csv')
+    outliers_1ms
+    > (['/datacommons/dhvi-md/TR_T-jump_SAXS_Mar2023/Trimer10.17Only_Series3_44C/processed_series3_44C_all_images/TrimerOnly_Series-3_44C_1ms_042_Q.chi'],
+       [5])
      
-    on_outliers[0]
-    > ['/datacommons/dhvi-md/TR_T-jump_SAXS_Mar2023/Trimer10.17Only_Series3_44C/processed_series3_44C_all_images/TrimerOnly_Series-3_44C_5us_030_Q.chi']
+    outliers_1ms[0]
+    > ['/datacommons/dhvi-md/TR_T-jump_SAXS_Mar2023/Trimer10.17Only_Series3_44C/processed_series3_44C_all_images/TrimerOnly_Series-3_44C_1ms_042_Q.chi']
     
-    on_outliers[1]
-    > [29]
+    outliers_1ms[1]
+    > [5]
     
     outliers, outlier_index = svd_outliers(arr=on_array, flist=on_files, q=q, cutoff=2.5, save_dir='/datacommons/dhvi-md/TR_T-jump_SAXS_Mar2023/ANALYSIS/test_dir/', 
                                save_name=str(t) + '_svd_outliers.csv')
+                               
+    outliers
+    > ['/datacommons/dhvi-md/TR_T-jump_SAXS_Mar2023/Trimer10.17Only_Series3_44C/processed_series3_44C_all_images/TrimerOnly_Series-3_44C_1ms_042_Q.chi']
+    
+    outlier_index
+    > [5]
     '''
     
-    # test if input parameters are proper data type
-    try:
-        if not isinstance(arr, np.ndarray):     
-            raise TypeError('TypeError: Oops! arr must be np.ndarray type. Try again...')
-            
-        if not isinstance(flist, list):     
-            raise TypeError('TypeError: Oops! flist must be list type. Try again...')
-        
-        if not isinstance(cutoff, float):     
-            raise TypeError('TypeError: Oops! cutoff must be float type. Try again...')
-        
-        if not isinstance(save_dir, str):     
-            raise TypeError('TypeError: Oops! save_dir must be str type. Try again...')
-            
-        if not isinstance(save_name, str):     
-            raise TypeError('TypeError: Oops! save_name must be str type. Try again...')
-            
-    except TypeError as e:
-        print(e.args[0])
-        if isinstance(e, TypeError):
-            if e.args[0][17] == 'a':
-                flist = input('TypeError: Enter a new np.ndarray for arr parameter: ')
-                
-            elif e.args[0][17] == 'f':
-                delim = input('TypeError: Enter a new list for flist parameter. Make sure files in flist include full path: ')
-              
-            elif e.args[0][11] == 'c':
-                mask = int(input('TypeError: Enter a new float value for cutoff: '))  
-                
-            elif e.args[0][22] == 'd':
-                err = input('TypeError: Enter a new str value for save_dir (remember to include "/" after directory name): ')
-            
-            elif e.args[0][22] == 'n':
-                err = input('TypeError: Enter a new str value for save_name: ')
-
     
     # Build matrix 
     matrix = np.matrix([i for i in arr]).transpose()
@@ -224,6 +189,9 @@ def svd_outliers(arr, flist, q, cutoff=2.5, save_dir='./OUTLIERS/',
 
 def iterative_chi(arr, flist, chi_cutoff=1.5, outfile='outliers.csv', calls=1):
     '''
+    Function to run chi-square analysis iteratively to find and discard all outliers
+    above the indicated cutoff. Function iterates until no outliers are found. 
+    
     Parameters:
     -----------
     arr : np.array
@@ -247,6 +215,33 @@ def iterative_chi(arr, flist, chi_cutoff=1.5, outfile='outliers.csv', calls=1):
         
     Returns:
     --------
+    Does not return anything. List of chi outlier files will be saved to the indicated outfile. 
+    
+    Examples:
+    ---------
+    iterative_chi(arr=data_arr, flist=unique_files, chi_cutoff=2.5, outfile='/datacommons/dhvi-md/AshleyB/tmp/1ms_chi_outliers', calls=1)
+    > Iteration: 1
+      Number of outliers found: 5
+      Number of laser on files left: 95
+      /datacommons/dhvi-md/TR_T-jump_SAXS_Mar2023/Trimer10.17Only_Series3_44C/processed_series3_44C_all_images/TrimerOnly_Series-3_44C_1ms_074_Q.chi
+      /datacommons/dhvi-md/TR_T-jump_SAXS_Mar2023/Trimer10.17Only_Series3_44C/processed_series3_44C_all_images/TrimerOnly_Series-3_44C_1ms_042_Q.chi
+      /datacommons/dhvi-md/TR_T-jump_SAXS_Mar2023/Trimer10.17Only_Series3_44C/processed_series3_44C_all_images/TrimerOnly_Series-3_44C_1ms_079_Q.chi
+      /datacommons/dhvi-md/TR_T-jump_SAXS_Mar2023/Trimer10.17Only_Series3_44C/processed_series3_44C_all_images/TrimerOnly_Series-3_44C_1ms_013_Q.chi
+      /datacommons/dhvi-md/TR_T-jump_SAXS_Mar2023/Trimer10.17Only_Series3_44C/processed_series3_44C_all_images/TrimerOnly_Series-3_44C_1ms_020_Q.chi
+      Iteration: 2
+      Number of outliers found: 4
+      Number of laser on files left: 91
+      /datacommons/dhvi-md/TR_T-jump_SAXS_Mar2023/Trimer10.17Only_Series3_44C/processed_series3_44C_all_images/TrimerOnly_Series-3_44C_1ms_070_Q.chi
+      /datacommons/dhvi-md/TR_T-jump_SAXS_Mar2023/Trimer10.17Only_Series3_44C/processed_series3_44C_all_images/TrimerOnly_Series-3_44C_1ms_012_Q.chi
+      /datacommons/dhvi-md/TR_T-jump_SAXS_Mar2023/Trimer10.17Only_Series3_44C/processed_series3_44C_all_images/TrimerOnly_Series-3_44C_1ms_031_Q.chi
+      /datacommons/dhvi-md/TR_T-jump_SAXS_Mar2023/Trimer10.17Only_Series3_44C/processed_series3_44C_all_images/TrimerOnly_Series-3_44C_1ms_092_Q.chi
+      Iteration: 3
+      Number of outliers found: 1
+      Number of laser on files left: 90
+      /datacommons/dhvi-md/TR_T-jump_SAXS_Mar2023/Trimer10.17Only_Series3_44C/processed_series3_44C_all_images/TrimerOnly_Series-3_44C_1ms_051_Q.chi
+      Iteration: 4
+      Number of outliers found: 0
+      Number of laser on files left: 90
     '''
     
     # Calculate average curve
@@ -464,25 +459,33 @@ def saxs_scale(ref, scale, dataset, err=False, delim=',', mask=0, qmin=1.5, qmax
         Numpy array containing the full scaled curved that was saved to file.
         
     Raises:
-    -------
-    TypeError 
-        When the reference, or scale file or delim is not str type, mask is not int type, or err is not bool type. 
-        
-    ValueError
-        When the given delim does not match the delimitter in the given file
-        
+    -------  
     IndexError
         When errors are indicated but do not exist in the given file
         
     Examples:
     ----------
-    scaled = saxs_scale(ref='/datacommons/dhvi-md/TR_T-jump_SAXS_Mar2023/Complex10.17-I5_TSeries-11_44C/processed/Complex10.17-I5_TSeries-11_44C_100ms_001_Q.chi',
-                        scale='/datacommons/dhvi-md/TR_T-jump_SAXS_Mar2023/Complex10.17-I5_TSeries-11_44C/processed/Complex10.17-I5_TSeries-11_44C_-5us_001_Q.chi', 
-                        dataset='test', err=False, delim=' ', mask=12, qmin=1.4, qmax=1.6, outfile='scaled.csv', outdir='./tmp/')
+    scaled = saxs_scale(ref='/datacommons/dhvi-md/TR_T-jump_SAXS_Mar2023/Trimer10.17Only_Series3_44C/processed_series3_44C_all_images/TrimerOnly_Series-3_44C_1ms_017_Q.chi',
+                        scale='/datacommons/dhvi-md/TR_T-jump_SAXS_Mar2023/Trimer10.17Only_Series3_44C/processed_series3_44C_all_images//TrimerOnly_Series-3_44C_-5us_017_Q.chi', 
+                        dataset='test', err=False, delim=' ', mask=12, qmin=1.4, qmax=1.6, outfile='scaled.csv', outdir='/datacommons/dhvi-md/AshleyB/tmp/')
     
     scaled
-    > array([8.59403483, 8.28879774, 7.95483028, ..., 0.95764088, 0.95691427,
-       0.95716287])
+    > (array([7.89046914, 7.67275974, 7.53970047, ..., 0.96371704, 0.96319655,
+        0.96333235]),
+       array([0., 0., 0., ..., 0., 0., 0.]))
+       
+    scaled, errs = saxs_scale(ref='/datacommons/dhvi-md/TR_T-jump_SAXS_Mar2023/Trimer10.17Only_Series3_44C/processed_series3_44C_all_images/TrimerOnly_Series-3_44C_1ms_017_Q.chi',
+                              scale='/datacommons/dhvi-md/TR_T-jump_SAXS_Mar2023/Trimer10.17Only_Series3_44C/processed_series3_44C_all_images//TrimerOnly_Series-3_44C_-5us_017_Q.chi', 
+                              dataset='test', err=False, delim=' ', mask=12, qmin=1.4, qmax=1.6, outfile='scaled.csv', outdir='/datacommons/dhvi-md/AshleyB/tmp/')
+    
+    scaled
+    > array([7.89046914, 7.67275974, 7.53970047, ..., 0.96371704, 0.96319655,
+        0.96333235])
+        
+    errs
+    > array([0., 0., 0., ..., 0., 0., 0.]))
+       
+    
        
         
     ** Note that the returned scaled curve DOES NOT contain scattering vector values. The scattering
@@ -490,95 +493,20 @@ def saxs_scale(ref, scale, dataset, err=False, delim=',', mask=0, qmin=1.5, qmax
     '''
     
     try:
-        if not isinstance(ref, str):
-            raise TypeError('TypeError: ref file must be str type. Try again...')
-            
-        if not isinstance(scale, str):
-            raise TypeError('TypeError: scale file must be str type. Try again...')
         
-        if not isinstance(dataset, str):
-            raise TypeError('TypeError: dataset must be str type. Try again...')
-            
-        if not isinstance(err, bool):
-            raise TypeError('TypeError: err must be bool type. Try again...')
-            
-        if not isinstance(delim, str):
-            raise TypeError('TypeError: delim must be str type. Try again...')
-            
-        if not isinstance(mask, int):
-            raise TypeError('TypeError: mask must be int type. Try again...')
-            
-        if not isinstance(qmin, float):
-            raise TypeError('TypeError: qmin must be int type. Try again...')
-        
-        if not isinstance(qmax, float):
-            raise TypeError('TypeError: qmax must be int type. Try again...')
-            
-        if not isinstance(outfile, str):
-            raise TypeError('TypeError: outfile must be str type. Try again...')
-            
-        if not isinstance(outdir, str):
-            raise TypeError('TypeError: outdir must be str type. Try again...')
-            
-
         # load data
         print('Loading data...')
         prot = load_saxs(file=ref, delim=delim, mask=mask)
         buf = load_saxs(file=scale, delim=delim, mask=mask)        
         
                 
-    except Exception as e:
+    except IndexError as e:
         tb = e.__traceback__
         print('\033[91m' + str(e.args[0]) + '\033[91m') 
         traceback.print_tb(tb)
-        if isinstance(e, TypeError):
-            if e.args[0][11] == 'r':
-                print('\033[93mTypeError: Enter a new str value for ref file name including full path (do not include quotations): \033[93m')
-                ref = input()
-                
-            elif e.args[0][11] == 's':
-                print('\033[93mTypeError: Enter a new str value for scale file name including full path (do not include quotations): \033[93m')
-                scale = input()
-              
-            elif e.args[0][11:12] == 'da':
-                print('\033[93mTypeError: Enter a new str value for dataset: \033[93m')
-                dataset = input()
-                
-            elif e.args[0][11] == 'e':
-                print('\033[93mTypeError: Enter a new bool value for err: \033[93m')
-                err = input()
-                
-            elif e.args[0][11:12] == 'de':
-                print('\033[93mTypeError: Enter a new str value for delim: \033[93m')
-                delim = input()
-                
-            elif e.args[0][11] == 'm':
-                print('\033[93mTypeError: Enter a new int value for mask: \033[93m')
-                mask = int(input())
-                
-            elif e.args[0][12:15] == 'min':
-                print('\033[93mTypeError: Enter a new int value for qmin: \033[93m')
-                qmin = float(input())
-                
-            elif e.args[0][12:15] == 'max':
-                print('\033[93mTypeError: Enter a new int value for qmax: \033[93m')
-                qmax = float(input())
-                
-            elif e.args[0][14:18] == 'file':
-                print('\033[93mTypeError: Enter a new str value for outfile name: \033[93m')
-                dataset = input()
-                
-            elif e.args[0][14:17] == 'dir':
-                print('\033[93mTypeError: Enter a new str value for outdir path: \033[93m')
-                dataset = input()
-                
-        elif isinstance(e, ValueError):
-            print('\033[93mValueError: File has a different delim. Enter a new str value for delim (do not include quotations): \033[93m')
-            delim = str(input())
-        
-        elif isinstance(e, IndexError):
-            print('\033[93mIndexError: Attempted to propagate errors but no errors were loaded. Changing err to False...]')
-            err = False
+
+        print('\033[93mIndexError: Attempted to propagate errors but no errors were loaded. Changing err to False...]')
+        err = False
             
 
     finally:
@@ -698,7 +626,8 @@ def saxs_scale(ref, scale, dataset, err=False, delim=',', mask=0, qmin=1.5, qmax
         # show figure
         plt.show()
     
-    return scaled
+    return scaled, buf_err
+
 
 def saxs_sub(ref, data, delim_ref=',', delim_data=',', err=False, ref_skip=1, data_skip=1,
              outfile=None, outdir='./'):
@@ -751,6 +680,37 @@ def saxs_sub(ref, data, delim_ref=',', delim_data=',', err=False, ref_skip=1, da
     --------
     corrected : DataFrame
         DataFrame containing the subtracted curve. 
+        
+    Examples:
+    ---------
+    ref, data, correction = saxs_sub(ref='/datacommons/dhvi-md/TR_T-jump_SAXS_Mar2023/Trimer10.17Only_Series3_44C/processed_series3_44C_all_images/TrimerOnly_Series-3_44C_1ms_017_Q.chi',
+                                data='/datacommons/dhvi-md/AshleyB/tmp/scaled.csv', delim_ref=' ', delim_data=',', err=False, ref_skip=12, data_skip=0, outfile=None, 
+                                 outdir='/datacommons/dhvi-md/AshleyB/tmp/')
+                                 
+    ref
+    > array([[0.01947379, 7.90474967],
+             [0.02091628, 7.67862152],
+             [0.02235877, 7.52825252],
+             ...,
+             [2.56431318, 0.96828936],
+             [2.56546711, 0.96746814],
+             [2.56662079, 0.96760997]])
+             
+    data
+    > array([[0.01947379, 7.89046914, 0.        ],
+             [0.02091628, 7.67275974, 0.        ],
+             [0.02235877, 7.53970047, 0.        ],
+             ...,
+             [2.56431318, 0.96371704, 0.        ],
+             [2.56546711, 0.96319655, 0.        ],
+             [2.56662079, 0.96333235, 0.        ]])
+             
+    correction[:5]
+    > [-0.014280532015460423,
+       -0.005861783138817245,
+       0.0114479564882366,
+       0.014281655270111493,
+       0.014171961779569031]
     '''
     
     # load reference data

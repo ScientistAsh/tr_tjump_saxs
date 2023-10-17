@@ -56,17 +56,7 @@ def saxs_auc(flist, times=[1.5, 3, 5, 10, 50, 100, 300, 500, 1000],
     saved as a CSV file. If you would like to continue 
     to use the AUC data for further analysis call
     the function inside a variable definition. Plots of 
-    the calculated AUC as a function of times will be saved. 
-    
-    ex.1: Continue using data (data will also be saved):
-    a = saxs_auc(flist=files, delim=',', q_min=0, 
-                q_max=0.3, 
-                outdir='../../ANALYSIS/NALYSIS/AUC/', 
-                data_outfile='tjumps_auc.csv',
-                plot_outfile='tjump_auc_plot.png')
-                
-    ex.2: Just save data to csv file:
-    saxs_auc(flist=files, delim=',', q_min=0, q_max=0.3)
+    the calculated AUC as a function of times will be saved.
                 
     
     Parameters:
@@ -123,6 +113,19 @@ def saxs_auc(flist, times=[1.5, 3, 5, 10, 50, 100, 300, 500, 1000],
     --------
     auc : np.array
         Contains the time delay and calculated AUC values.  
+        
+    Examples:
+    ---------
+        
+    ex.1: Continue using data (data will also be saved):
+    a = saxs_auc(flist=files, delim=',', q_min=0, 
+                q_max=0.3, 
+                outdir='../../ANALYSIS/NALYSIS/AUC/', 
+                data_outfile='tjumps_auc.csv',
+                plot_outfile='tjump_auc_plot.png')
+                
+    ex.2: Just save data to csv file:
+    saxs_auc(flist=files, delim=',', q_min=0, q_max=0.3)
     '''
     
     # set variable names
@@ -227,7 +230,10 @@ def svd_kinectics(flist, delim=',', times=[1.5,3,5,10,50,100,300,500,1000],
         Unitary array. The first a.ndim - 2 dimensions have the same size as 
         those of the input. 
     
-    
+    Examples:
+    ---------
+    u, s, v = svd_kinectics(flist=cleaned_files, delim=' ', times=[10, 50, 100, 25s, 50s, 75s, 1000], time_unit='us', 
+                        outdir='./ANALYSIS/MODELS/SVD/')
     '''
     # create empty vectors list
     vectors = []
@@ -329,8 +335,8 @@ def svd_kinectics(flist, delim=',', times=[1.5,3,5,10,50,100,300,500,1000],
     return u, s, v
 
 
-def auc_fit(file, x, columns=None, delim=',', skip=0, func='double', iterations=2000,
-            xlab='Time Delay $\mu$s', ylab='Area Under the Curve\n(Simpsons Rule)',
+def auc_fit(file, x, columns=None, delim=',', skip=0, func='double', initial_guess=[1, 1, 1],
+            iterations=2000, xlab='Time Delay $\mu$s', ylab='Area Under the Curve\n(Simpsons Rule)',
             xlogscale=True, ylogscale=False, outdir=None, outfile='fit',
             plot_title='CH505TF SAXS T-Jumps Area Under the Curve\nExponential Fit'):
     '''
@@ -338,17 +344,14 @@ def auc_fit(file, x, columns=None, delim=',', skip=0, func='double', iterations=
     ------------
     Function to fit curve to either an exponential decay or double exponential
     decay. The single exponential decay function takes the form:
-                        a * np.exp(-b * x) + c
+                        A * np.exp(-x/tau) + B
                         
     and the the double exponential decay funtion takes the form:
-            a * (np.exp(-b * x)) + c * (np.exp(-d * x)) + e
+            A1 * np.exp(-x/tau1) + A2 * np.exp(-x/tau2) + B
             
     The function will return the fit and plot the fit overlayed with input data. 
     Function is based on the scipy.optimize.curve_fit() function and returns the values
-    for the fitted parameters. The function will also automatically determine the values
-    for tau using the following equations:
-                            tau_fast = 1 / b
-                            tau_slow = 1 / d
+    for the fitted parameters. 
     
     Parameters:
     -----------
@@ -370,6 +373,9 @@ def auc_fit(file, x, columns=None, delim=',', skip=0, func='double', iterations=
         What type of function to fit to data. Accepts either 'double' for double 
         exponential decay fit or 'single' for single exponential decay fit. Will raise
         and ValueError for incorrect value. 
+        
+    initial_guess (optional) : array_like
+        Initial guess for the parameters. The default sets all the initial values to 1.
         
     iterations (optional) : int
         Number of iterations to run the scipy.optimize.curve_fit. Default value is 2000. 
@@ -403,6 +409,7 @@ def auc_fit(file, x, columns=None, delim=',', skip=0, func='double', iterations=
         
         
     Returns:
+    --------
     
     model : np.array
         Model of fit. 
@@ -410,42 +417,73 @@ def auc_fit(file, x, columns=None, delim=',', skip=0, func='double', iterations=
     popt : np.array
         Values of funcotional parameters determined from exponential fit. 
         
+    conf_int : np.array
+        Confidence intervals for the fitted parameters. 
+        
+    Examples:
+    ---------
+    auc_fit(file='/datacommons/dhvi-md/TR_T-jump_SAXS_Mar2023/ANALYSIS/Trimer10.17_Series3/BOOTSTRAPPING/AUC/bootstrap_auc_resamples.csv', x=[5,10,50,100,500,1000], columns=[1,2],
+       delim=',', skip=0, func='double', initial_guess=[10.0, 1.0, 25.0, 1.0, 500.0], iterations=2000, xlab='Time Delay $\\mu$s', ylab='AUC', xlogscale=True, ylogscale=False, 
+       outdir=None, outfile='test', plot_title='CH848 TrimerOnly Series3 AUC')
+        
     '''
     
     # Define single exponential decay function
-    def single(x, a, b, c):
-        return a * np.exp(-b * x) + c
+    def single_exp(x, A, tau, B):
+        return A * np.exp(-x/tau) + B
     
     # define double exponential decay function
-    def double(x, a, b, c, d, e):
-        return a * (np.exp(-b * x)) + c * (np.exp(-d * x)) + e
-    
+    def double_exp(x, A1, tau1, A2, tau2, B):
+        return A1 * np.exp(-x/tau1) + A2 * np.exp(-x/tau2) + B
+
     # load data
-    ydata = np.loadtxt(fname=file, usecols=columns, delimiter=delim, skiprows=skip) 
+    ydata = np.loadtxt(fname=file, usecols=columns, delimiter=delim, skiprows=skip)[:, 1] 
     
     # define x data
-    xdata = np.array(x)
+    xdata = x
     
     # fit data to exponential function
     if func == 'single':
-        popt, pcov = scipy.optimize.curve_fit(single, xdata, ydata, maxfev=iterations)
-        model = single(np.linspace(min(xdata), max(xdata), int(max(xdata))), *popt)
-        tau = 1 / popt[1]
-        params =['span', 'k', 'plateau', 'tau']
-        popt = np.append(popt, tau)
+        popt, pcov = scipy.optimize.curve_fit(single_exp, xdata, ydata, maxfev=iterations, p0=initial_guess)
+        model = single_exp(np.linspace(min(xdata), max(xdata), int(max(xdata))), *popt)
+        params =['A', 'tau', 'B']
         
     elif func == 'double':
-        popt, pcov = scipy.optimize.curve_fit(double, xdata, ydata, maxfev=iterations)
-        model = double(np.linspace(min(xdata), max(xdata), int(max(xdata))), *popt)
-        tau_fast = 1 / popt[1]
-        tau_slow = 1 / popt[3]
-        params = ['span_fast', 'kfast', 'span_slow', 'kslow', 'plateau', 'tau_fast', 'tau_slow']
-        popt = np.append(popt, tau_fast)
-        popt = np.append(popt, tau_slow)
+        popt, pcov = scipy.optimize.curve_fit(double_exp, xdata, ydata, maxfev=iterations, p0=initial_guess)
+        model = double_exp(np.linspace(min(xdata), max(xdata), int(max(xdata))), *popt)
+        params = ['A1', 'tau1', 'A2', 'tau2', 'B']
    
     else:
         raise ValueError('Invalid function type. Expected one of: single, double')
-    
+        
+    alpha = 0.05  # 95% confidence interval = 100*(1-alpha)
+
+    n = len(ydata)    # number of data points
+    p = len(popt)  # number of parameters
+
+    dof = max(0, n - p)  # number of degrees of freedom
+
+    # student-t value for the dof and confidence level
+    t_val = scipy.stats.t.ppf(1.0-alpha/2., dof) 
+
+    sigma = np.diag(pcov)**0.5
+    conf_int = t_val * sigma/np.sqrt(n)
+
+    if func == 'single':
+        print("Single Exponential Fit:")
+        print("A =", popt[0], "±", conf_int[0])
+        print("tau =", popt[1], "±", conf_int[1])
+        print("B =", popt[2], "±", conf_int[2])
+
+    elif func == 'double':
+        print("\nDouble Exponential Fit:")
+        print("A1 =", popt[0], "±", conf_int[0])
+        print("tau1 =", popt[1], "±", conf_int[1])
+        print("A2 =", popt[2], "±", conf_int[2])
+        print("tau2 =", popt[3], "±", conf_int[3])
+        print("B =", popt[4], "±", conf_int[4])
+       
+
     # plot data
     ax = plt.axes([0.125,0.125, 5, 5])
     plt.scatter(xdata, ydata, marker='o', s=500, label='data', color='grey')
@@ -462,23 +500,27 @@ def auc_fit(file, x, columns=None, delim=',', skip=0, func='double', iterations=
     plt.legend(loc='best', borderpad=0.3, shadow=False, fontsize=60,
                markerscale=1)
 
-    # save figure
+        
+    # save data
     if outdir is not None:
         make_dir(f=outdir)
         plt.savefig(str(outdir) + '/' + str(outfile) + '.png', bbox_inches='tight')
+
+        np.savetxt(oudir + outfile + '_' + str(func) + '_model.csv', 
+                   np.c_[np.linspace(min(xdata), max(xdata), int(max(xdata))), model], 
+                   delimiter=',', header='time,' + str(func) + '_exp_decay_model',
+                   comments='# ' + str(plot_title) + ' | Calculated with tr_tjump_saxs_analysis Python package | ' + datetime.datetime.now().strftime('%d %B %Y'))
+
+        np.savetxt(outdir + outfile + '_' + str(func) + '_fit.csv',
+                   [popt, conf_int], delimiter=',', header=str(params))
         
     plt.show()
-    
-    # save model curve
-    if outdir is not None:
-        df = pd.DataFrame(data=[params, popt])
-        df.to_csv(str(outdir) + '/' + str(outfile) + '.csv')
         
-    return popt
+    return model, popt, conf_int
 
 
-def svd_fit(file, x, delim=',', row=0, func='double', iterations=2000,
-            xlab='Time Delay $\mu$s', ylab='% Contribution',
+def svd_fit(file, x, delim=',', row=0, func='double', initial_guess=[1, 1, 1], 
+            iterations=2000, xlab='Time Delay $\mu$s', ylab='% Contribution',
             xlogscale=True, ylogscale=False, outdir=None, outfile='fit',
             plot_title='CH505TF SAXS T-Jumps First Right Vector\nExponential Fit'):
     '''
@@ -486,17 +528,14 @@ def svd_fit(file, x, delim=',', row=0, func='double', iterations=2000,
     ------------
     Function to fit curve to either an exponential decay or double exponential
     decay. The single exponential decay function takes the form:
-                        a * np.exp(-b * x) + c
+                        A * np.exp(-x/tau) + B
                         
     and the the double exponential decay funtion takes the form:
-            a * (np.exp(-b * x)) + c * (np.exp(-d * x)) + e
+            A1 * np.exp(-x/tau1) + A2 * np.exp(-x/tau2) + B
             
     The function will return the fit and plot the fit overlayed with input data. 
     Function is based on the scipy.optimize.curve_fit() function and returns the values
-    for the fitted parameters. The function will also automatically determine the values
-    for tau using the following equations:
-                            tau_fast = 1 / b
-                            tau_slow = 1 / d
+    for the fitted parameters. 
     
     Parameters:
     -----------
@@ -517,6 +556,9 @@ def svd_fit(file, x, delim=',', row=0, func='double', iterations=2000,
         What type of function to fit to data. Accepts either 'double' for double 
         exponential decay fit or 'single' for single exponential decay fit. Will raise
         and ValueError for incorrect value. 
+        
+    initial_guess (optional) : array_like
+        Initial guess for the parameters. The default sets all the initial values to 1.
         
     iterations (optional) : int
         Number of iterations to run the scipy.optimize.curve_fit. Default value is 2000. 
@@ -551,22 +593,32 @@ def svd_fit(file, x, delim=',', row=0, func='double', iterations=2000,
         
         
     Returns:
-    
-    model : np.array
-        Model of fit. 
-        
+    --------
     popt : np.array
         Values of funcotional parameters determined from exponential fit. 
+            
+
+    conf_int : np.array
+        Confidence intervals for the fitted parameters. 
+        
+    model : np.array
+        Model of fit. 
+
+        
+    Examples:
+    ---------
+    svd_fit(file='/datacommons/dhvi-md/TR_T-jump_SAXS_Mar2023/Vt_SVD.csv', x=[5,10,50,100,250, 500,750, 1000], row=0,
+            delim=',', func='double', initial_guess=[10.0, 1.0, 25.0, 1.0, 500.0], iterations=2000, xlab='Time Delay $\\mu$s', ylab='Contribution',
+            xlogscale=True, ylogscale=False, outdir=None, outfile='test', plot_title='CH848 TrimerOnly Series3 RV1')
         
     '''
     
-    # Define single exponential decay function
-    def single(x, a, b, c):
-        return a * np.exp(-b * x) + c
+    def single_exp(x, A, tau, B):
+        return A * np.exp(-x/tau) + B
     
     # define double exponential decay function
-    def double(x, a, b, c, d, e):
-        return a * (np.exp(-b * x)) + c * (np.exp(-d * x)) + e
+    def double_exp(x, A1, tau1, A2, tau2, B):
+        return A1 * np.exp(-x/tau1) + A2 * np.exp(-x/tau2) + B
     
     # load data
     data = np.loadtxt(fname=file, delimiter=delim) 
@@ -577,23 +629,47 @@ def svd_fit(file, x, delim=',', row=0, func='double', iterations=2000,
     
     # fit data to exponential function
     if func == 'single':
-        popt, pcov = scipy.optimize.curve_fit(single, xdata, ydata, maxfev=iterations)
-        model = single(np.linspace(min(xdata), max(xdata), int(max(xdata))), *popt)
+        popt, pcov = scipy.optimize.curve_fit(single_exp, xdata, ydata, maxfev=iterations, p0=initial_guess)
+        model = single_exp(np.linspace(min(xdata), max(xdata), int(max(xdata))), *popt)
         tau = 1 / popt[1]
-        params =['span', 'k', 'plateau', 'tau']
-        popt = np.append(popt, tau)
+        params =['A', 'tau', 'B']
         
     elif func == 'double':
-        popt, pcov = scipy.optimize.curve_fit(double, xdata, ydata, maxfev=iterations)
-        model = double(np.linspace(min(xdata), max(xdata), int(max(xdata))), *popt)
+        popt, pcov = scipy.optimize.curve_fit(double_exp, xdata, ydata, maxfev=iterations, p0=initial_guess)
+        model = double_exp(np.linspace(min(xdata), max(xdata), int(max(xdata))), *popt)
         tau_fast = 1 / popt[1]
         tau_slow = 1 / popt[3]
-        params = ['span_fast', 'kfast', 'span_slow', 'kslow', 'plateau', 'tau_fast', 'tau_slow']
-        popt = np.append(popt, tau_fast)
-        popt = np.append(popt, tau_slow)
+        params = ['A1', 'tau1', 'A2', 'tau2', 'B']
    
     else:
         raise ValueError('Invalid function type. Expected one of: single, double')
+        
+    alpha = 0.05  # 95% confidence interval = 100*(1-alpha)
+
+    n = len(ydata)    # number of data points
+    p = len(popt)  # number of parameters
+
+    dof = max(0, n - p)  # number of degrees of freedom
+
+    # student-t value for the dof and confidence level
+    t_val = scipy.stats.t.ppf(1.0-alpha/2., dof) 
+
+    sigma = np.diag(pcov)**0.5
+    conf_int = t_val * sigma/np.sqrt(n)
+
+    if func == 'single':
+        print("Single Exponential Fit:")
+        print("A =", popt[0], "±", conf_int[0])
+        print("tau =", popt[1], "±", conf_int[1])
+        print("B =", popt[2], "±", conf_int[2])
+
+    elif func == 'double':
+        print("\nDouble Exponential Fit:")
+        print("A1 =", popt[0], "±", conf_int[0])
+        print("tau1 =", popt[1], "±", conf_int[1])
+        print("A2 =", popt[2], "±", conf_int[2])
+        print("tau2 =", popt[3], "±", conf_int[3])
+        print("B =", popt[4], "±", conf_int[4])
     
     # plot data
     ax = plt.axes([0.125,0.125, 5, 5])
@@ -616,78 +692,19 @@ def svd_fit(file, x, delim=',', row=0, func='double', iterations=2000,
         make_dir(f=outdir)
         plt.savefig(str(outdir) + '/' + str(outfile) + '.png', bbox_inches='tight')
         
+        np.savetxt(outdir + outfile + '_' + str(func) + '_model.csv', 
+                   np.c_[np.linspace(min(xdata), max(xdata), int(max(xdata))), model], 
+                   delimiter=',', header='time,' + str(func) + '_exp_decay_model',
+                   comments='# ' + str(plot_title) + ' | Calculated with tr_tjump_saxs_analysis Python package | ' + datetime.datetime.now().strftime('%d %B %Y'))
+
+        np.savetxt(outdir + outfile + '_' + str(func) + '_fit.csv',
+                   [popt, conf_int], delimiter=',', header=str(params))
+        
     plt.show()
-    
-    # save model curve
-    if outdir is not None:
-        df = pd.DataFrame(data=[params, popt])
-        #np.savetxt(str(outdir) + '/' + str(outfile) + '.csv', np.c_[params, popt], delimiter=",")
-        df.to_csv(str(outdir) + '/' + str(outfile) + '.csv')
         
-    return popt
+    return popt, conf_int, model
 
 
-def auc_bs(auc_data, time_delay, outdir, cl=0.95 ):
-    '''
-    Function to determine confidence interval and standard 
-    error by bootstrapping. Results saved to a text file.
-    
-    Parameters:
-    -----------
-    
-    auc_data : list
-        List containing AUC data for bootstrapping.
-    
-    time_delay : str
-        Time delay for data. 
-        
-    outdir : str
-        Directory to save data to.
-            
-    cl (optional) : float
-        Confidence level for bootstrapping. Defualt value
-        is 0.95. 
-        
-    Returns:
-    --------
-    bs.confidence_interval : Bootstrap confidence interval
-        Instance of collections.namedtuple
-        
-    bs.standard_error : Bootstrap standard error
-        Standard deviation of bootstrap distribution
-        
-    cl : confidence level
-        Condifence level used for bootstrapping.
-    '''
-    
-    # set variables for saving files
-    # future addition
-    
-    # define method for sampling 
-    rng = np.random.default_rng()
-    
-    # convert auc to array
-    auc_arr = np.array(auc_data)
-    
-    # get statistics from auc data
-    std_sample = np.std(auc_arr) 
-    mean_sample = np.mean(auc_arr)
-    # print statistics
-    print('Mean: ' + str(mean_sample) + ' +/- ' + str(std_sample))
-    
-    # convert data to sequence for bootstrap function input
-    seq = (auc_arr,)
-    
-    # bootstrap over auc data
-    bs = bootstrap(seq, np.mean, confidence_level=cl,
-                random_state=rng)
-    # print confidence interval and SEM
-    print([bs.confidence_interval, 
-           'Standard error: ' + str(bs.standard_error)])
-    
-    with open(str(outdir + time_delay) + '.txt', "w") as output:
-        output.write("%s \n %s \n %s \n %s" % ('Time delay: ' + str(time_delay), 
-                                            'Mean +/- std: ' + str(mean_sample) + ' +/- ' + str(std_sample),
-                                            'Confidence Interval: ' + str(bs.confidence_interval),
-                                           'Standard Error: ' + str(bs.standard_error)))
-    return bs.confidence_interval, bs.standard_error, cl
+
+
+

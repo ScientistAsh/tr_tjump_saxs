@@ -40,11 +40,6 @@ def make_dir(f):
     Returns:
     --------
     
-    
-    Raises:
-    -------
-    TypeError
-        When f is not a str type
         
     Examples:
     ---------
@@ -53,21 +48,11 @@ def make_dir(f):
     
     
     '''
-    try:
-        if not isinstance(f, str):
-            raise TypeError('Oops! f must be str type.  Try again...')
         
-        elif not os.path.exists(f):
-            os.makedirs(f)
-        else:
-            print('\033[1;92mDirectory already exists!\033[1;92m')
-            
-    except TypeError as e:
-        tb = e.__traceback__
-        print('\033[91mA TypeError occurred\033[91m')
-        traceback.print_tb(tb)
-        print('\033[93mEnter a new directory path string (do not include quotations): \033[93m')
-        make_dir(input())
+    if not os.path.exists(f):
+        os.makedirs(f)
+    else:
+        print('\033[1;92mDirectory already exists!\033[1;92m')
         
     return
 
@@ -94,54 +79,19 @@ def make_flist(directory='./', prefix=None, suffix=None):
     --------
     files : list containing the appended files. 
     
-    Raises:
-    -------
-    TypeError
-        When the given directory, prefix, or suffix is not str type.
-        
-    FileNotFoundError
-        When the given directory does not exist
+    Examples:
+    ---------
+    files = make_flist(directory='/datacommons/dhvi-md/TR_T-jump_SAXS_Mar2023/Trimer10.17Only_Series3_44C/processed_series3_44C_all_images/',
+                  prefix='TrimerOnly_Series-3_44C_1ms_', suffix='_Q.chi')
+                  
+    files[:5]
+    > ['/datacommons/dhvi-md/TR_T-jump_SAXS_Mar2023/Trimer10.17Only_Series3_44C/processed_series3_44C_all_images/TrimerOnly_Series-3_44C_1ms_017_Q.chi',
+      '/datacommons/dhvi-md/TR_T-jump_SAXS_Mar2023/Trimer10.17Only_Series3_44C/processed_series3_44C_all_images/TrimerOnly_Series-3_44C_1ms_011_Q.chi',
+      '/datacommons/dhvi-md/TR_T-jump_SAXS_Mar2023/Trimer10.17Only_Series3_44C/processed_series3_44C_all_images/TrimerOnly_Series-3_44C_1ms_074_Q.chi',
+      '/datacommons/dhvi-md/TR_T-jump_SAXS_Mar2023/Trimer10.17Only_Series3_44C/processed_series3_44C_all_images/TrimerOnly_Series-3_44C_1ms_083_Q.chi',
+      '/datacommons/dhvi-md/TR_T-jump_SAXS_Mar2023/Trimer10.17Only_Series3_44C/processed_series3_44C_all_images/TrimerOnly_Series-3_44C_1ms_034_Q.chi']
     '''
     
-    try:
-        if not os.path.exists(directory):
-            raise FileNotFoundError('FileNotFoundError: Directory does not exist. Try again...')
-            
-        if not isinstance(directory, str):
-            raise TypeError('TypeError: Oops! directory must be str type. Try again...')
-           
-        if prefix is not None and not isinstance(prefix, str):
-            raise TypeError('TypeError: Oops! prefix must be str type. Try again...')
-            
-        if suffix is not None and not isinstance(suffix, str):
-            raise TypeError('TypeError: Oops! suffix must be str type. Try again...')
-    
-    except (TypeError, FileNotFoundError) as e:
-        tb = e.__traceback__
-        print('\033[91m' +str(e.args[0]) +'\033[91m')
-        traceback.print_tb(tb)
-        
-        if isinstance(e, TypeError):
-            if e.args[0][17] == 'd':
-                print('\033[93mEnter a new value for directory (do not include quotations): \033[93m')
-                directory = input()
-                
-            elif e.args[0][17] == 'p':
-                print('\033[93mEnter a new value for prefix (do not include quotations): \033[93m')
-                prefix = input()
-                
-            elif e.args[0][17] == 's':
-                print('\033[93mEnter a new value for suffix (do not include quotations): \033[93m')
-                suffix = input()
-        elif isinstance(e, FileNotFoundError):
-            print('\033[93mEnter a new value for directory (do not include quotations): \033[93m')
-            directory = input()
-            
-        make_flist(directory, prefix, suffix)
-        
-        #return e.args
-        
-
     # create empty list for files
     files = []
 
@@ -177,7 +127,7 @@ def make_flist(directory='./', prefix=None, suffix=None):
     return files
 
 
-def unique_set(lst):
+def unique_set(lst, list_slice=[-9,-6]):
     '''
     Function to return a unique set of curves. Useful for outlier detection analysis so that
     both laser on and laser off outliers can be subtracted fro data sets without returning
@@ -186,18 +136,32 @@ def unique_set(lst):
     Parameters:
     -----------
     lst : list
-        list containing the set of files containing duplicate curve replicates. 
+        list containing the set of files containing duplicate curve replicates.
+        
+    list_slice : list
+        List containing the slicing to use to check for uniqueness. 
         
     Returns:
     --------
     unique : list
         List containing the unique set of curves. 
+        
+    Examples:
+    ---------
+    unique_files = unique_set(lst=files, list_slice=[-9,-6])
+    
+    unique_files[:5]
+    > ['/datacommons/dhvi-md/TR_T-jump_SAXS_Mar2023/Trimer10.17Only_Series3_44C/processed_series3_44C_all_images/TrimerOnly_Series-3_44C_1ms_017_Q.chi',
+      '/datacommons/dhvi-md/TR_T-jump_SAXS_Mar2023/Trimer10.17Only_Series3_44C/processed_series3_44C_all_images/TrimerOnly_Series-3_44C_1ms_011_Q.chi',
+      '/datacommons/dhvi-md/TR_T-jump_SAXS_Mar2023/Trimer10.17Only_Series3_44C/processed_series3_44C_all_images/TrimerOnly_Series-3_44C_1ms_074_Q.chi',
+      '/datacommons/dhvi-md/TR_T-jump_SAXS_Mar2023/Trimer10.17Only_Series3_44C/processed_series3_44C_all_images/TrimerOnly_Series-3_44C_1ms_083_Q.chi',
+      '/datacommons/dhvi-md/TR_T-jump_SAXS_Mar2023/Trimer10.17Only_Series3_44C/processed_series3_44C_all_images/TrimerOnly_Series-3_44C_1ms_034_Q.chi']
     '''
     numbers = set()
     unique = []
 
     for e in lst:
-        number = e[-9:-6]
+        number = e[list_slice[0]:list_slice[1]]
         if number not in numbers:
             numbers.add(number)
             unique.append(e)
@@ -207,7 +171,9 @@ def unique_set(lst):
 
 def sort_key(file_path):
     '''
-    Function to sort a file list from shortest to longest time delays.
+    Function to sort a file list from shortest to longest time delays. The list 
+    can also be sorted in reverse order. See docs for sort() for more details on
+    the different options. 
     
     Parameters:
     ------------
@@ -219,6 +185,10 @@ def sort_key(file_path):
     file_path : list
         The input file is returned as a sorted list with the shortest time delays
         preceeding longer time delays. 
+        
+    Examples:
+    ---------
+    unique_files.sort(key=sort_key)
     '''
     time_str = file_path.split('/')[-1].split('_')[0]
     if time_str.endswith('us'):
@@ -260,84 +230,40 @@ def load_saxs(file, delim=' ', mask=0):
         numpy array with a shape determined by input data. 
         
         
-    Raises:
-    -------
-    TypeError 
-        When the file or delim is not str type, mask is not int type, or err is not bool type. 
-        
-    ValueError
-        When the given delim does not match the delimitter in the given file
-        
-    IndexError
-        When errors are indicated but do not exist in the given file
-        
     Examples:
     ----------
-    curve = load_saxs(files[0], delim=' ', mask=12)
+    curve = load_saxs(file=unique_files[0], delim=' ', mask=12)
     
     curve
-    > array([[ 0.01947379, -0.03160436],
-            [ 0.02091628, -0.02051868],
-            [ 0.02235877, -0.01261062],
+    > array([[0.01947379, 7.85679592],
+            [0.02091628, 7.63967921],
+            [0.02235877, 7.51242249],
             ...,
-            [ 2.56431318,  0.00460323],
-            [ 2.56546711,  0.00433085],
-            [ 2.56662079,  0.00426167]])
+            [2.56431318, 0.96619764],
+            [2.56546711, 0.96530417],
+            [2.56662079, 0.9655092 ]])
+            
     curve[0]
-    > [ 0.01947379, -0.03160436]
+    > [0.01947379, 7.85679592]
     
     curve[:, 0]
     > array([0.01947379, 0.02091628, 0.02235877, ..., 2.56431318, 2.56546711,
        2.56662079])
        
-    **(Note that when loading a typical SAXS scattering or difference curve where
-       the first column is scattering vector this slicing yields the scattering vector)
+    **(Note that when loading a SAXS scattering or difference curve with this function
+       assumes the first column is scattering vector this slicing yields the 
+       scattering vector)
        
     curve[:, 1]
-    > array([-0.03160436, -0.02051868, -0.01261062, ...,  0.00460323,
-        0.00433085,  0.00426167]
+    > array([7.85679592, 7.63967921, 7.51242249, ..., 0.96619764, 0.96530417,
+       0.9655092 ])
         
-    **(Note that when loading a typical SAXS scattering or difference curve where
-       the second column is scattering intensity (difference) this slicing yields the scattering intensity)
-    '''
-    
-    try:
-        if not isinstance(file, str):
-            raise TypeError('TypeError: file must be str type. Try again...')
-            
-        if not isinstance(delim, str):
-            raise TypeError('TypeError: delim must be str type. Try again...')
-        
-        if not isinstance(mask, int):
-            raise TypeError('TypeError: mask must be int type. Try again...')
-
-                
-                
-        data = np.loadtxt(file, delimiter=delim, skiprows=mask)
-                
-                
-                
-    except Exception as e:
-        tb = e.__traceback__
-        print('\033[91m' + str(e.args[0]) + '\033[91m') 
-        traceback.print_tb(tb)
-        if isinstance(e, TypeError):
-            if e.args[0][11] == 'f':
-                print('\033[93mTypeError: Enter a new str value for file name including full path (do not include quotations): \033[93m')
-                file = input()
-                
-            elif e.args[0][11] == 'd':
-                print('\033[93mTypeError: Enter a new str value for delim (do not include quotations): \033[93m')
-                delim = input()
-              
-            elif e.args[0][11] == 'm':
-                print('\033[93mTypeError: Enter a new int value for mask: \033[93m')
-                mask = int(input())
-                
-        elif isinstance(e, ValueError):
-            print('\033[93mValueError: File has a different delim. Enter a new str value for delim (do not include quotations): \033[93m')
-            delim = str(input())
-        
+    **(Note that when loading a typical SAXS scattering or difference curve with this function
+       assumes the second column is scattering intensity (difference) this slicing yields the
+       scattering intensity)
+       
+    **ALWAYS DOUBLE CHECK THE STUCTURE OF YOUR DATA BEFORE PROCEEDING WITH ANALYSIS**
+    ''' 
     
     data = np.loadtxt(file, delimiter=delim, skiprows=mask)
                 
@@ -392,24 +318,68 @@ def load_set(flist,  delim=' ', mask=0, err=False):
         empty array if there is no error column in the imported 
         
     Raises:
-    -------
-    TypeError
-        When flist or delim is not str type, mask is not int type, or err is not bool type. 
-        
+    -------     
     IndexError
         When a column for error values is indicated but does not exist in the given files. 
-        
-    ValueError
-        When the given delim does not match the delimitter in the given file. 
-        
+        Automatically will change the parameter to false and load the first 2 columns. 
 
     Examples:
     ----------
-    data, data_arr, q, error = load_set(flist=files, delim=' ', mask=12, err=False)
+    data, data_arr, q, error = load_set(flist=unique_files, delim=' ', mask=12, err=True)
+    
+    data_arr
+    > array([[7.85679592, 7.63967921, 7.51242249, ..., 0.96619764, 0.96530417,
+            0.9655092 ],
+           [7.87198958, 7.66261235, 7.51031768, ..., 0.9664396 , 0.96571491,
+            0.96609875],
+           [7.84994401, 7.63675968, 7.49401917, ..., 0.96446535, 0.96385704,
+            0.96423422],
+           ...,
+           [7.88628053, 7.68617685, 7.53291648, ..., 0.96709338, 0.96626128,
+            0.96652873],
+           [7.86942711, 7.66851149, 7.51880812, ..., 0.96803352, 0.96712817,
+            0.96746257],
+           [7.88613706, 7.66802136, 7.52325112, ..., 0.96697166, 0.96614919,
+            0.96656476]])
+            
+    data[:5]
+    > [array([7.85679592, 7.63967921, 7.51242249, ..., 0.96619764, 0.96530417,
+        0.9655092 ]),
+      array([7.87198958, 7.66261235, 7.51031768, ..., 0.9664396 , 0.96571491,
+        0.96609875]),
+      array([7.84994401, 7.63675968, 7.49401917, ..., 0.96446535, 0.96385704,
+        0.96423422]),
+      array([7.84651475, 7.64940525, 7.50359073, ..., 0.96627311, 0.9657274 ,
+        0.96571123]),
+      array([7.89351909, 7.67055721, 7.51081677, ..., 0.96695567, 0.96630476,
+        0.96658035])]
+       
+    q
+    > array([0.01947379, 0.02091628, 0.02235877, ..., 2.56431318, 2.56546711,
+       2.56662079])
+       
+    error
+    > array([], dtype=float64)
+    
+    If errors are loaded:
+    error
+    > array([[9.62916913e-04, 7.39919029e-04, 6.22659290e-04, ...,
+            1.15498340e-04, 1.22943931e-04, 1.15711604e-04],
+           [8.33085019e-04, 7.42610471e-04, 8.22841480e-04, ...,
+            1.06371721e-04, 1.10393871e-04, 1.05537893e-04],
+           [5.79901692e-04, 5.01821210e-04, 3.45763626e-04, ...,
+            1.05825534e-04, 1.11021712e-04, 1.11404213e-04],
+           ...,
+           [8.16359371e-04, 6.07113883e-04, 5.76987635e-04, ...,
+            9.29373075e-05, 9.04202400e-05, 1.11355254e-04],
+           [8.19724138e-04, 6.52015743e-04, 5.79315887e-04, ...,
+            1.13987157e-04, 1.21290312e-04, 1.10161638e-04],
+           [8.25755768e-04, 5.18587304e-04, 4.25556099e-04, ...,
+            7.76364752e-05, 8.09584761e-05, 7.55214740e-05]])
     
     for c in data_arr:
         plt.plot(q, c)
-    
+
     '''
     
     # initialize list to store data
@@ -418,19 +388,7 @@ def load_set(flist,  delim=' ', mask=0, err=False):
     
     # test if input parameters are proper data type
     try:
-        if not isinstance(flist, list):     
-            raise TypeError('TypeError: Oops! flist must be list type. Try again...')
-            
-        if not isinstance(delim, str):     
-            raise TypeError('TypeError: Oops! delim must be str type. Try again...')
-        
-        if not isinstance(mask, int):     
-            raise TypeError('TypeError: Oops! mask must be int type. Try again...')
-        
-        if not isinstance(err, bool):     
-            raise TypeError('TypeError: Oops! err must be bool type. Try again...')
-            
-                    
+       
         # load laser on data
         for f in tqdm(flist, desc='Loading curves'):
             curve = load_saxs(file=f, delim=delim, mask=mask) 
@@ -448,32 +406,12 @@ def load_set(flist,  delim=' ', mask=0, err=False):
                 continue 
 
             
-    except (TypeError, IndexError) as e:
+    except (IndexError) as e:
         tb = e.__traceback__
         print('\033[1;91m' + str(e.args[0]) + '\033[1;91m')
         traceback.print_tb(tb)
         
-        if isinstance(e, TypeError):
-            if e.args[0][17] == 'f':
-                print('\033[1;91mTypeError: Enter a new list value for flist. Include full path and quotations for each file name (do not include quotations around list): \033[1;91m')
-                flist = input()
-                
-            elif e.args[0][17] == 'd':
-                print('\033[1;91mTypeError: Enter a new str value for delim (do not include quotations): \033[1;91m')
-                delim = input()
-              
-            elif e.args[0][11] == 'm':
-                print('\033[1;91mTypeError: Enter a new int value for mask: \033[1;91m') 
-                mask = int(input())
-                
-            elif e.args[0][17] == 'e':
-                print('\033[1;91mTypeError: Enter a new bool value for err: \033[1;91m')
-                err = input()
-        elif isinstance(e, ValueError):
-            print('\033[1;91mValueError: File has a different delim. Enter a new str value for delim (do not include quotations): \033[1;91m')
-            delim = str(input())
-            
-        elif isinstance(e, IndexError):
+        if isinstance(e, IndexError):
             print('\033[1;91mIndexError: err=True indicates file contains error but there is no column containing errors. Changing err to False...\033[1;91m')
             err = False
             # load laser on data
@@ -580,11 +518,6 @@ def plot_curve(data_arr, q_arr, labels=None, qmin=None, qmax=None,
         
     Returns:
     --------
-    
-    Raises:
-    -------
-    TypeError:
-        data_arr or q are not np.ndarray data types. 
         
         
     Examples:
@@ -594,118 +527,96 @@ def plot_curve(data_arr, q_arr, labels=None, qmin=None, qmax=None,
     
         
     '''
-    
-    # test if input parameters are proper data type
-    try:
-        if not isinstance(data_arr, np.ndarray):     
-            raise TypeError('TypeError: Oops! data_arr must be np.ndarray type. Try again...')
-            
-        if not isinstance(q_arr, np.ndarray):     
-            raise TypeError('TypeError: Oops! q_arr must be np.ndarray type. Try again...')
-            
-    except TypeError as e:
-        tb = e.__traceback__
-        print('\033[1;91m' + str(e.args[0]) + '\033[1;91m')
-        traceback.print_tb(tb)
-        
-        if e.args[0][17] == 'd':
-            print('\033[1;91mTypeError: Enter a new np.ndarray value for data_arr \033[1;91m')
-            
-        elif e.args[0][17] == 'q':
-            print('\033[1;91mTypeError: Enter a new np.ndarray value for q_arr \033[1;91m')
+    # set color map
+    n = len(data_arr)
+    colors = pl.cm.rainbow_r(np.linspace(0,1,n))
 
-        
-    else:  
-        # set color map
-        n = len(data_arr)
-        colors = pl.cm.rainbow_r(np.linspace(0,1,n))
-    
-        # plot data
-        ax = plt.axes([0.125,0.125, 5, 5])
+    # plot data
+    ax = plt.axes([0.125,0.125, 5, 5])
+    for i,c in zip(data_arr, colors):
+        plt.plot(q_arr, i, color=c)
+
+    # set position for legend
+    if qmin is None and qmax is None and imin is None and imax is None:
+        leg_loc = (1.0, 0.5)
+        leg_pos = 'center left'
+        leg_cols = 5
+    else:
+        leg_loc = (-0.2, -0.08)
+        leg_pos = 'upper center'
+        leg_cols= 10
+
+    # style plot    
+    plt.legend(loc=leg_pos, bbox_to_anchor=leg_loc, fontsize=60, ncol=leg_cols, labels=labels)
+    plt.xlabel(str(x), fontsize=60)
+    plt.ylabel(str(y), fontsize=60)
+    plt.title(str(title), fontsize=70)
+    plt.xticks(fontsize=55)
+    plt.yticks(fontsize=55)
+    plt.set_cmap('viridis')
+
+    for axis in ['top','bottom','left','right']:
+        ax.spines[axis].set_linewidth(5)
+
+
+    # define qmin and qmax
+    if qmin is not None or qmax is not None:
+        if qmin is not None and qmax is None:
+            qmin = qmin
+            qmax = np.max(data_arr[:,1])
+
+        elif qmin is None and qmax is not None:
+            qmin = np.min(data_arr[:,1])
+            qmax = qmax
+
+        elif qmin is not None and qmax is not None:
+            qmin = qmin
+            qmax = qmax
+
+    # define imin and imax
+    if imin is not None or imax is not None:
+        if imin is not None and imax is None:
+            imin = imin
+            imax = np.max(data_arr[:,2])
+
+        elif imin is None and imax is not None:
+            imin = np.min(data_arr[:,2])
+            imax = imax
+
+        elif imin is not None and imax is not None:
+            imin = imin
+            imax = imax
+
+    if qmin is not None or qmax is not None or imin is not None or imax is not None:
+        #inset plot
+        a = plt.axes([-5, 0.5, 4, 4])
+
+        # loop over all curves
         for i,c in zip(data_arr, colors):
+
+            # plot data
             plt.plot(q_arr, i, color=c)
-        
-        # set position for legend
-        if qmin is None and qmax is None and imin is None and imax is None:
-            leg_loc = (1.0, 0.5)
-            leg_pos = 'center left'
-            leg_cols = 5
-        else:
-            leg_loc = (-0.2, -0.08)
-            leg_pos = 'upper center'
-            leg_cols= 10
-        
-        # style plot    
-        plt.legend(loc=leg_pos, bbox_to_anchor=leg_loc, fontsize=60, ncol=leg_cols, labels=labels)
+
+        # style plot
         plt.xlabel(str(x), fontsize=60)
         plt.ylabel(str(y), fontsize=60)
-        plt.title(str(title), fontsize=70)
         plt.xticks(fontsize=55)
         plt.yticks(fontsize=55)
+        plt.xlim([qmin, qmax])
+        plt.ylim([imin, imax])
+        plt.title(str(title) + ' Zoom', fontsize=70)
         plt.set_cmap('viridis')
 
         for axis in ['top','bottom','left','right']:
-            ax.spines[axis].set_linewidth(5)
+            a.spines[axis].set_linewidth(5)
 
-        
-        # define qmin and qmax
-        if qmin is not None or qmax is not None:
-            if qmin is not None and qmax is None:
-                qmin = qmin
-                qmax = np.max(data_arr[:,1])
-    
-            elif qmin is None and qmax is not None:
-                qmin = np.min(data_arr[:,1])
-                qmax = qmax
-        
-            elif qmin is not None and qmax is not None:
-                qmin = qmin
-                qmax = qmax
-            
-        # define imin and imax
-        if imin is not None or imax is not None:
-            if imin is not None and imax is None:
-                imin = imin
-                imax = np.max(data_arr[:,2])
-    
-            elif imin is None and imax is not None:
-                imin = np.min(data_arr[:,2])
-                imax = imax
-        
-            elif imin is not None and imax is not None:
-                imin = imin
-                imax = imax
-            
-        if qmin is not None or qmax is not None or imin is not None or imax is not None:
-            #inset plot
-            a = plt.axes([-5, 0.5, 4, 4])
-        
-            # loop over all curves
-            for i,c in zip(data_arr, colors):
-    
-                # plot data
-                plt.plot(q_arr, i, color=c)
-        
-            # style plot
-            plt.xlabel(str(x), fontsize=60)
-            plt.ylabel(str(y), fontsize=60)
-            plt.xticks(fontsize=55)
-            plt.yticks(fontsize=55)
-            plt.xlim([qmin, qmax])
-            plt.ylim([imin, imax])
-            plt.title(str(title) + ' Zoom', fontsize=70)
-            plt.set_cmap('viridis')
+        # mark inset
+        mark_inset(ax, a, loc1=1, loc2=4, fc="none", ec="0.5", linewidth=4)
 
-            for axis in ['top','bottom','left','right']:
-                a.spines[axis].set_linewidth(5)
+    if save is True:
+        make_dir(save_dir)
+        plt.savefig(save_dir + save_name, bbox_inches='tight')
 
-            # mark inset
-            mark_inset(ax, a, loc1=1, loc2=4, fc="none", ec="0.5", linewidth=4)
-            
-        if save is True:
-            make_dir(save_dir)
-            plt.savefig(save_dir + save_name, bbox_inches='tight')
-            
-        plt.show()
-            
-        return
+    plt.show()
+
+    return
