@@ -49,9 +49,13 @@ import datetime
 import numpy as np
 from scipy.optimize import curve_fit
 
-def guinier_analysis(file, label, delim=',', mask=0, qmax=0.0025, outdir=None):
+def guinier_analysis(file, label, delim=',', mask=0, qmin=None, qmax=None, 
+                     trailing_points=15, initial_guess=[12, 52], outdir=None):
     '''
-    Perform Guinier analysis on a SAXS scattering curve.
+    Perform Guinier analysis on a SAXS scattering curve. Guinier fit uses the 
+    following functional form:
+    
+                        i0 * np.exp(-0.5 * (rg * q) ** 2)
 
     Parameters:
     ------------
@@ -60,7 +64,8 @@ def guinier_analysis(file, label, delim=',', mask=0, qmax=0.0025, outdir=None):
             run Guinier analysis on.
             
         label : str
-            Name of dataset to be used in plot titles.
+            Name of dataset to be used in plot titles and output
+            file headers.
         
         delim (optional) : str
             Type of delimitter used in input files. Default 
@@ -71,9 +76,24 @@ def guinier_analysis(file, label, delim=',', mask=0, qmax=0.0025, outdir=None):
             When set to 0 all rows ar imported. Default value
             is 0.    
             
+        qmin (optional) : float
+            Minimum q value to include in Guinier Fitting. When
+            set to None, the minimum 1 value in input data will
+            be used. The default value is None. 
+            
         qmax (optional) : float
-            Maximum q value to include in guinier fitting. Default
-            value is 0.0025Å-1.
+            Maximum q value to include in guinier fitting. When 
+            set to None,the maximum q valuein input data will be
+            used. The default value is None. 
+            
+        trailing_points (optional) : int
+            Number of points to include in plot but not used in Guinier fitting.
+            Default value is 15. 
+            
+        initial_guess (optional) : list
+            Initial guesses for input parameters. Index 0 position indicates
+            I0 while the index 1 position indicates Rg. Default value is
+            [12, 52]
             
         outdir (optional) : str
             Path to store output files. Output Rg and I will be saved as 
@@ -102,6 +122,12 @@ def guinier_analysis(file, label, delim=',', mask=0, qmax=0.0025, outdir=None):
     
     Examnples: 
     ----------
+    Ex. 1: 
+    Rg, Rg_error_scaled, I_0, I_0_error_scaled, model = guinier_analysis(file='/datacommons/dhvi-md/TR_T-jump_SAXS_Mar2023/ANALYSIS/STATIC/BUFFER_SUB/30C_buffsub.csv', 
+                                                                     label='30C', delim=',', mask=0, qmin=0.025, qmax=0.03, 
+                                                                     outdir='/datacommons/dhvi-md/AshleyB/tmp/')
+                                                                     
+    Ex. 2
     > temps = ['30C', '35C', '40C', '44C']
     
     > static_files = ['/datacommons/dhvi-md/TR_T-jump_SAXS_Mar2023/ANALYSIS/STATIC/BUFFER_SUB/30C_buffsub.csv',
@@ -111,9 +137,9 @@ def guinier_analysis(file, label, delim=',', mask=0, qmax=0.0025, outdir=None):
                      
     > for t, f in zip(temps, static_files):
         print('Running Guinier Analysis on ' + str(t))
-        Rg, Rg_error_scaled, I_0, I_0_error_scaled, model = guinier_analysis(file=str(f), label=str(t), delim=',', 
-                                                                            mask=0, qmax=0.0025, 
-                                                                            outdir='/datacommons/dhvi-md/TR_T-jump_SAXS_Mar2023/ANALYSIS/STATIC/GUINIER/')
+        Rg, Rg_error_scaled, I_0, I_0_error_scaled, model = guinier_analysis(file=f, label=t, delim=',', 
+                                                                             mask=0, qmin=0.025, qmax=0.03, 
+                                                                             outdir='/datacommons/dhvi-md/AshleyB/tmp/')
     '''
     
     # load data 
@@ -121,33 +147,53 @@ def guinier_analysis(file, label, delim=',', mask=0, qmax=0.0025, outdir=None):
     curve = load_saxs(file=file, delim=delim, mask=mask)
     
     # define guinier equation
-    def linear(x,a,b):
-        return b-a*x
-    
-    # select qmin and qmax
+    def guinier_equation(q, i0, rg):
+        return i0 * np.exp(-0.5 * (rg * q) ** 2)
+
     print('Running Guinier Analysis...')
-    qmin = np.min(curve[:, 0])
     
-    # define x and y values
-    x = curve[:,0]**2
-    y = np.log(curve[:,1])
+    # define q
+    q = curve[:, 0]
     
-    # mask x and y data to low q values only 
-    x_masked = x[:np.max(np.where(x < 0.0025))]
-    y_masked = y[:np.max(np.where(x < 0.0025))]
+    if qmin is None:
+        qmin = np.min(q)
+    if qmax is None:
+        qmax = np.max(q)
+        
+    mask = (q >= qmin) & (q <= qmax)
+    q_mask = q[mask]
+
+    # define x values
+    x = q ** 2
+    x_masked = x[mask]
+    xmax = len(x_masked) + trailing_points
+
+    # define y values
+    y = np.log(curve[:, 1])
+    y_masked = y[mask]
 
     # Perform the curve fit using the Guinier equation
-    popt, pcov = scipy.optimize.curve_fit(linear, x_masked, y_masked, method='lm', p0=[10,10], maxfev=50000)
+    popt, pcov = scipy.optimize.curve_fit(guinier_equation, x_masked, y_masked, method='lm', 
+                                          p0=[initial_guess[0],initial_guess[1]], 
+                                          maxfev=50000)
 
-    # Extract the fitted parameters
-    I_0 = np.exp(popt[1])
-    slope = popt[0]
-    I_0_error = np.sqrt(pcov[1][1])
-    I_0_error_scaled = I_0 * I_0_error
-    Rg = np.sqrt(3 * slope)
-    Rg_error = np.sqrt(pcov[0][0])
-    Rg_error_scaled = 0.5 * Rg * ( Rg_error / abs(slope) )
+    x_range = np.linspace(np.min(x_masked), np.max(x_masked), len(x_masked))
+    model = guinier_equation(x_range, *popt)
     
+    # Extract fitted parameters
+    I_0 = np.exp(popt[0])
+    Rg = np.sqrt(3 * popt[1])  
+    
+
+    # Extract the diagonal elements of the covariance matrix for errors
+    I_0_error = np.sqrt(pcov[0][0])
+    Rg_error = np.sqrt(3 * pcov[1][1])
+
+
+    # Calculate the scaled errors
+    I_0_error_scaled = I_0 * I_0_error
+    Rg_error_scaled = Rg * (Rg_error / abs(popt[1]))
+
     # Print values
     print("Rg  = {:.2f} +/- {:.2f}".format(Rg,Rg_error_scaled))
     print("I_0 = {:.2f} +/- {:.2f}".format(I_0,I_0_error_scaled))
@@ -155,20 +201,18 @@ def guinier_analysis(file, label, delim=',', mask=0, qmax=0.0025, outdir=None):
     
     # fit model to data
     print('Fitting model...')
-    model = linear(np.linspace(np.min(x_masked), np.max(x_masked), len(x_masked)), *popt)
+    x_range = np.linspace(np.min(x_masked), np.max(x_masked), len(x_masked))
+    model = guinier_equation(x_range, *popt)
     
     # plot data
     print('Plotting Data...')
-    
-    # get number of x values
-    xmax = np.max(np.where(x_masked == np.max(x_masked))) + 15
     
     # set up axis
     ax1 = plt.axes([0.125,0.125, 5, 5])
     
     # make plot 
     plt.scatter(x[:xmax], y[:xmax], label='Data', s=500, color='grey', zorder=1)
-    plt.plot(x_masked, model, label='Linear Fit', linewidth=10, color='red', zorder=-1)
+    plt.plot(x_range, model, label='Linear Fit', linewidth=10, color='red', zorder=-1)
     #plt.yscale('log')
     
     # style plot
@@ -178,39 +222,12 @@ def guinier_analysis(file, label, delim=',', mask=0, qmax=0.0025, outdir=None):
     plt.yticks(fontsize=50)
     plt.title(str(label) + ' Guinier Analysis', fontsize=70, fontweight='bold')
     plt.legend(fontsize=60)
-    plt.text(0.5, 0.05,'R$_{g}$ = ' + "{:.5f}".format(Rg) + ' ± ' + "{:.5f}".format((Rg_error_scaled)) + '\nI$_{0}$ = ' + "{:.5f}".format(I_0) + ' ± ' + "{:.5f}".format((I_0_error_scaled)),
-             horizontalalignment='center', verticalalignment='center', transform=ax1.transAxes, fontsize=70, color='red')
+    plt.text(0.45, 0.1,'R$_{g}$ = ' + "{:.5f}".format(Rg) + ' ± ' + "{:.5f}".format((Rg_error)) + '\nI$_{0}$ = ' + "{:.5f}".format(I_0) + ' ± ' + "{:.5f}".format((I_0_error)),
+             horizontalalignment='right', verticalalignment='center', transform=ax1.transAxes, fontsize=70, color='red')
     
     # set thickness of graph borders
     for axis in ['top','bottom','left','right']:
         ax1.spines[axis].set_linewidth(5)
-        
-    # define inset plot
-    ax2 = plt.axes([-5, 0.5, 4, 4])
-    
-    # make plot 
-    plt.scatter(x[:xmax], y[:xmax], label='Data', s=500, color='grey', zorder=1)
-    plt.plot(x_masked, model, label='Linear Fit', linewidth=10, color='red', zorder=-1)
-    #plt.yscale('log')
-    
-    # style plot
-    plt.xlabel('q$^2$', fontsize=60, fontweight='bold')
-    plt.ylabel('ln(I)', fontsize=60, fontweight='bold')
-    plt.xticks(fontsize=50)
-    plt.yticks(fontsize=50)
-    plt.title(str(label) + ' Guinier Analysis', fontsize=70, fontweight='bold')
-    plt.legend(fontsize=60)
-    plt.xlim(0, qmax)
-    plt.text(0.5, 0.05,'R$_{g}$ = ' + "{:.5f}".format(Rg) + ' ± ' + "{:.5f}".format((Rg_error_scaled)) + '\nI$_{0}$ = ' + "{:.5f}".format(I_0) + ' ± ' + "{:.5f}".format((I_0_error_scaled)),
-             horizontalalignment='center', verticalalignment='center', transform=ax2.transAxes, fontsize=70, color='red')
-    
-    # set thickness of graph borders
-    for axis in ['top','bottom','left','right']:
-        ax2.spines[axis].set_linewidth(5)
-    
-    # mark inset
-    mark_inset(ax1, ax2, loc1=1, loc2=4, fc="none", ec="0.5", 
-                linewidth=4)
     
     # check if files should be saved
     if outdir is not None:
@@ -222,13 +239,13 @@ def guinier_analysis(file, label, delim=',', mask=0, qmax=0.0025, outdir=None):
     
         # save guinier analysis
         np.savetxt(str(outdir + label) + '_guinier.csv', np.c_[x[:xmax], y[:xmax]], header='q^2,ln(I)',
-                   delimiter=',', comments='# Guinier Analysis for ' + str(label) + ' | DHVI | Henderson Lab | ALB | ' + str(current_date))
+                   delimiter=',', comments='# Guinier Analysis for ' + str(label) + ' | ' + str(current_date))
         
-        np.savetxt(str(outdir + label) + '_guinier_params.csv', np.c_[Rg, Rg_error_scaled, I_0, I_0_error_scaled], header='Rg,Rg_err,I0,I0_err',
-                   delimiter=',', comments='# Guinier Rg and I0 parameters for ' + str(label) + ' | DHVI | Henderson Lab | ALB | ' + str(current_date))
+        np.savetxt(str(outdir + label) + '_guinier_params.csv', np.c_[Rg, Rg_error, I_0, I_0_error], header='Rg,Rg_err,I0,I0_err',
+                   delimiter=',', comments='# Guinier Rg and I0 parameters for ' + str(label) + ' | ' + str(current_date))
     
         np.savetxt(str(outdir + label) + '_guinier_fit.csv', np.c_[x_masked, model], header='q2,ln(I)',
-                   delimiter=',', comments='# Guinier Fit for ' + str(label) + ' | DHVI | Henderson Lab | ALB | ' + str(current_date))
+                   delimiter=',', comments='# Guinier Fit for ' + str(label) + ' | ' + str(current_date))
     
     
     
@@ -240,7 +257,8 @@ def guinier_analysis(file, label, delim=',', mask=0, qmax=0.0025, outdir=None):
 
 
 
-def sys_err(flist, outlier_files, fslice=None, bin_size=10, 
+def sys_err(flist, outlier_files, threshold=2.5, delim=' ', mask=0, err=False, 
+            qmin=None, qmax=None, fslice=None, bin_size=10, 
             x='scattering vector (q, $\AA^-1$)', 
             y='$\Delta$ scattering intensity (i)', 
             title='CH505TF SAXS Scattering', save=True, save_dir='./', 
@@ -250,14 +268,15 @@ def sys_err(flist, outlier_files, fslice=None, bin_size=10,
     ------------
     Function that will take an input file list, bin the files, average
     each bin, and compare the average of the bins to check for systemic
-    errors in data collection. Before binning anf averaging, the function
+    errors in data collection. Before binning and averaging, the function
     will automatically remove pre-determined outlier files. Outliers 
     should be previoulsy determined and can be determined with the 
     `svd_outliers` and/or `iterative_chi` functions. This function is 
     intended to be used on scattering or difference curve sets, with each 
     scattering curve image imported into the file list. Funtion will plot
     the mean of each bin, save the plot, and return the cleaned flist, bins,
-    and the mean of each bin. 
+    and the mean of each bin. Bin sets determined as outliers based on z-scores
+    are reported by the function. 
     
     Parameters:
     -----------
@@ -269,6 +288,29 @@ def sys_err(flist, outlier_files, fslice=None, bin_size=10,
         List of files containing outliers images. The outliers can be determined
         with the `svd_outliers` and `iterative_chi` functions. These images will
         be removed from the flist before binning and averaging.
+        
+    threshold (optional) : float
+        z-score threshold to use for determining outlier bins. Default value
+        is 2.5 standard deviations. 
+        
+    delim = (optional) : str
+        Delimitter used in input data files. Default values is a space (' ').
+        
+    mask (optional) : int
+        Number of rows to skip when loading files. Default values is 0. Useful for
+        skipping rows with NaN or masked values. 
+        
+    err (optional) : bool
+        Indicates if there is the column containing experimental error. If set 
+        to False, then no errors will be loaded. Default value is False. 
+        
+    qmin (optional) : float
+        Minimum q value to use in plot insets. When set to None no inset plot
+        will be made. Default value is None.
+        
+    qmax (optional) : float
+        Maximum q value to use in plot insets. When set to None, no inset plot
+        will be made. Default value is None. 
         
     fslice (optional) : list
         List containing integers that will slice the replica 
@@ -311,25 +353,33 @@ def sys_err(flist, outlier_files, fslice=None, bin_size=10,
     
     means : list
         List of means of each bin 
+        
+    Examples:
+    ---------
+    files, bins, means = sys_err(flist=files, outlier_files=outliers, fslice=[-9,-6], bin_size=10, 
+                             x='scattering vector (q, $\\AA^{-1}$)', y='$\\Delta$ scattering intensity (i)',
+                            title='CH848 TrimerOnly Series3 Scattering', save=True, 
+                             save_dir='/datacommons/dhvi-md/AshleyB/tmp/', save_name='ch848_trimeronly_series3')
     
     '''
-
-    # remove outliers
-    for o in outlier_files:
-        flist = remove_outliers(flist=flist, outlier_file=o, fslice=[-9,-6])
-        
     # sort files so they are in order that they were collected
     flist.sort()
     
+    # remove outliers
+    #for o in outlier_files:
+    flist_cleaned, outlier_list = remove_outliers(flist=flist, olist=outlier_files,
+                                                  fslice=[fslice[0],fslice[1]])
+        
+    
     # load scattering curves as a set
-    data, data_arr, q, err = load_set(flist=flist, delim=' ', mask=10, err=False)
+    data, data_arr, q, err = load_set(flist=flist_cleaned, delim=delim, mask=mask, err=err)
     
     # create bins for list
     bins = []
     for i in range(0, len(data_arr), bin_size):
-        bin = data_arr[i: i+10]
-        bins.append(bin)
-    
+        b = data_arr[i: i+bin_size]
+        bins.append(b)
+
     # calculate average curve of each bin
     means = []
     for bin in bins:
@@ -338,14 +388,23 @@ def sys_err(flist, outlier_files, fslice=None, bin_size=10,
         
     # create a list of labels
     labels = list(range(1, len(bins) +1))
+    
+    # Check for outliers among the bin averages
+    bin_means = np.array([bin.mean(axis=0) for bin in bins])
+    bin_std = np.array([bin.std(axis=0) for bin in bins])
+    z_scores = np.abs((bin_means - bin_means.mean(axis=0)) / bin_std.mean(axis=0))
+    outlier_bins = np.where(z_scores > threshold)[0]
+    
+    if len(outlier_bins) > 0:
+        print('Outlier bin(s) found: ', outlier_bins)
+    
+    else:
+        print('No Outliers!')
         
     # plot each bin average
-    plot_curve(data_arr=means, q_arr=q, labels=labels, qmin=0.015, qmax=0.1, imin=None, imax=None, x=x, y=y, 
-               title=title, save=save, save_dir=save_dir, 
-               save_name=save_name)
-       
-    
-    
+    plot_curve(data_arr=means, q_arr=q, labels=labels, qmin=qmin, qmax=qmax, imin=None, imax=None, 
+               x=x, y=y, title=title, save=save, save_dir=save_dir, save_name=save_name)
+
     
     return flist, bins, means
 
@@ -441,6 +500,13 @@ def kratky_plot(files, delim=',', mask=0, err=True, labels=None, qmin=None, qmax
     --------
     kratky : np.array
         Numpy array containing Kratky values (without q).
+        
+    Examples:
+    ---------
+    kratky_plot(files=['/datacommons/dhvi-md/TR_T-jump_SAXS_Mar2023/ANALYSIS/STATIC/BUFFER_SUB/30C_buffsub.csv'], 
+                delim=',', mask=0, err=True, labels='30°C CH848 TrimerOnly Static Scattering', qmin=0.0, qmax=0.1,
+                imin=0.00, imax=0.006, x='scattering vector (Å$^{-1}$)', y='q$^{2}$I', 
+                title='CH848 TrimerOnly 30°C Static Krakty Plot', save=False, save_dir=None, save_name=None)
     
     '''
     data, data_arr, q, err = load_set(flist=files, delim=delim, mask=mask, err=err)
@@ -553,6 +619,15 @@ def temp_cal(flist, temps, test, delim=',', test_delim=',', mask=0, test_mask=0,
     -------
     ValueError 
         If err parameter is something other than True or False. 
+        
+    Examples:
+    ---------
+    data_arr, i, model, r2, err, temp_prediction = temp_cal(flist=sorted_temp_diff_files, temps=temp_differences, 
+                                                            test=protein_files[0], delim=',', test_delim=',', mask=0, 
+                                                            test_mask=0, 
+                                                            err=True, 
+                                                            outdir='./ANALYSIS/', 
+                                                            outfile='tjump_calib_linreg')
     '''
        
     # load file
