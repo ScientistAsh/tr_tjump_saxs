@@ -41,6 +41,8 @@ from file_handling import *
 
 import numpy as np
 from scipy.optimize import curve_fit
+
+
 def delta_pr(curve1, curve2, delim1=None, delim2=None, skip1=None, 
             skip2=None, kind='linear', fill_value='extrapolate',
             outfile=None):
@@ -58,16 +60,10 @@ def delta_pr(curve1, curve2, delim1=None, delim2=None, skip1=None,
     -----------
     curve1 : np.array
         Array containing PDDF data. 
-        *File name, including the full path, containing the P(r) curve to subtract from.
-        Ex: '../../ANALYSIS/PROTEIN/TJUMP/PDDF/LASER_OFF/1.5us_laseron_pddf.csv'*
         
     curve 2 : np.array
         Array containing PDDF data. 
-    
-    **str
-        File name, including the full path, containing the P(r) curve to subtract. 
-        Ex: '../../ANALYSIS/PROTEIN/TJUMP/PDDF/LASER_OFF/1.5us_laseroff_pddf.csv'**
-        
+ 
     delim1 (optional) : str
         Delimitter used in curve1 file. Default value is None.
         Ex: ',' for comma delimitted, ' ' for space delimitted, and '\t' for tab
@@ -116,7 +112,12 @@ def delta_pr(curve1, curve2, delim1=None, delim2=None, skip1=None,
         File name, including full path, to store output files. Saved output files include the 
         delta P(r) curve contained in a CSV file and a png plot. 
         
-    
+    Examples:
+    ---------
+    dpr1 = delta_pr(curve1=noApex, curve2=closed, delim1=',', delim2=',', skip1=2, skip2=2, 
+               kind='linear', fill_value='extrapolate', 
+               outfile='../../ANALYSIS/THEORETICAL/DELTA_PR/3closed_NoApex-3closed_man9.csv')
+
     '''
     # load P(r) curves
     #curve1 = np.loadtxt(fname=curve1, delimiter=delim1, skiprows=skip1)
