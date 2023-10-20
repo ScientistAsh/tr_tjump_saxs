@@ -1,12 +1,14 @@
-Package: tr_tjump_saxs
-Language: Python3
-Lincense: BSD-3 Clause
-Developer: @ScientistAsh
-Updated: 20 October 2023
+# tr_tjump_saxs
+**Language:** Python3
+**Lincense:** BSD-3 Clause
+**Developer:** @ScientistAsh
+**Updated:** 20 October 2023
+**v1.0.0** [![DOI](https://zenodo.org/badge/622369035.svg)](https://zenodo.org/doi/10.5281/zenodo.10028766)
 
-Description: Python package to process and analyze pump-probe time resolved, temperature-jump small angle X-ray scattering data.
+**Description:**
+  Python package to process and analyze pump-probe time resolved, temperature-jump small angle X-ray scattering data.
 
-Dependecies:
+**Dependecies:**
   - numpy=1.20.1=py38h93e21f0_0
   - numpy-base=1.20.1=py38h7d8b39e_0
   - numpydoc=1.1.0=pyhd3eb1b0_1
@@ -22,31 +24,37 @@ Dependecies:
   - unicodecsv=0.14.1=py38_0
   - datetime
 
-Environment file: the environment used to develop this package can be cloned from the environment.yml file. To clone the environment:
+**Environment file:**
+  The environment used to develop this package can be cloned from the environment.yml file. To clone the environment:
 
-  conda env create -f environment.yml 
+  `conda env create -f environment.yml` 
 
   The name of the environment is tr_tjump_saxs and is determined by the first line in the environment.yml file. 
   If you would like to change the name, replace tr_tjump_saxs with your preferred name in the first line of the environment.yml file. 
 
-Install: To get this code, simply clone the git repository:
+**Install:**
+  To get this code, simply clone the git repository:
 
-  git clone  https://github.com/ScientistAsh/tr_tjump_saxs.git
+  `git clone  https://github.com/ScientistAsh/tr_tjump_saxs.git`
 
-Usage: Extensive docstrings are provided in the source code to explain the usage, input parameters, output, and examples.
+**Usage:**
+  Extensive docstrings are provided in the source code to explain the usage, input parameters, output, and examples.
   For more extensive discussion on how to use the code, tutorial files are provided in the TUTORIALS. 
   The tutorials are in Jupyter Notebooks and allow for interactive usage (note that you must have SAXS data for interactive usage).
   It is recommended to either use Jupyter Notebooks or to write scripts and run them non-interactively. 
 
-Data avialbility: **COMING SOON**
+**Data avialbility:**
+  *COMING SOON*
 
-Script availability: **COMING SOON**
+**Script availability:** 
+  *COMING SOON*
 
-References: For publications and presentations please ackwoledge the use of this package in the ackowledgements. 
+**Citing:**
+  For publications and presentations please ackwoledge the use of this package in the ackowledgements. 
   Please also cite the associated publication:
 
-  Microsecond dynamics control the HIV-1 envelope conformation
+  *Microsecond dynamics control the HIV-1 envelope conformation
   Ashley L. Bennett, R.J. Edwards, Irina Kosheleva, Carrie Saunders, Yishak Bililign, Ashliegh Williams, Katayoun Manosouri, 
   Kevin O. Saunders, Barton F. Haynes, Priyamvada Acharya, Rory Henderson
-  bioRxiv 2023.05.17.541130; doi: https://doi.org/10.1101/2023.05.17.541130
+  bioRxiv 2023.05.17.541130; doi: https://doi.org/10.1101/2023.05.17.541130*
 
