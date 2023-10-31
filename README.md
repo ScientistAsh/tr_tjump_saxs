@@ -43,6 +43,46 @@ For more extensive discussion on how to use the code, tutorial files are provide
 The tutorials are in Jupyter Notebooks and allow for interactive usage (note that you must have SAXS data for interactive usage).
 It is recommended to either use Jupyter Notebooks or to write scripts and run them non-interactively. 
 
+This package is broken down into several different modules, each of which focuses on a specific aspect of the SAXS data processing/analysis workflow. 
+
+### `file_handling`
+The `file_handling` module contains functions for loading and storing files. The functions in the module include:
+- `make_dir()` to make new directories
+- `make_flist()` to make a list of files
+- `unique_set()` to get the unque values in a list
+- `sort_key()` to sort file lists according to time delays
+- `load_saxs()` to load a single SAXS scattering or difference curve
+- `lost_set()` to load a set of SAXS scattering or difference curves
+- `plot_curve` to plot SAXS scattering or difference curves
+
+### `saxs_processing`
+The `saxs_processing()` module contains functions to remove outliers, scale, and subtract data. The function in the module include:
+- `svd_outliers()` uses an SVD method to detect outliers in SAXS scattering curves (could also be used for difference curves)
+- `iterative_chi()` uses a chi-square method to detect outliers and repeats the process until no outliers are detected
+- `remove_outliers()` removes a set of previously determined outliers from a file list
+- `saxs_scale()` scales a SAXS scattering or difference curve to a reference curve
+- `saxs_sub()` subtracts a SAXS scattering or difference curve from a reference curve
+- `auc_outlier()` detects outliers using and area under the curve method (likely to be deprecated) 
+- `move_outliers()` moves outlier files to a new directory (likely to be deprecated)
+
+### `saxs_qc`
+The `saxs_qc` module provides functions to assess the quality of SAXS data. A function to calculate the PDDF will be added (eventually). The functions in this module include:
+- `guinier_analysis()` performs a guinier analysis
+- `sys_err()` assess the data for systematic errors during the experimental run
+- `kratky_plot()` performs a kratky analysis 
+- `temp_cal()` uses a linear regression method to estimate the temperature jump
+
+### `saxs_kinetics`
+The `saxs_kinetics` module provides functions to determine the kinetics from SAXS T-Jump data. The functions in this module include:
+- `saxs_auc()` uses the Simpson's method to determine the area under the curve for a given set of SAXS difference curves
+- `svd_kinetics()` runs an SVD analysis on a set of input SAXS difference curves
+- `auc_fit()` fits the area under the curve data to exponential equations
+- ` svd_fit()` fits the SVD right vectors to exponential equations
+
+### `saxs_modeling`
+The `saxs_modeling` module provides modeling saxs data. Functions will be added to this module in the future. The functions currently in this module include:
+- `delta_pr` uses an interpolation method to subtract a P(r) curve from a reference P(r) curve
+
 ## Data avialbility
 *COMING SOON*
 
