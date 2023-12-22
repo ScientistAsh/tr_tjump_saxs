@@ -519,46 +519,46 @@ def saxs_scale(ref, scale, dataset, err=False, delim=',', mask=0, qmin=1.5, qmax
         
         data = []        
 
-        # plot data prior to scaling
-        ax = plt.axes([0.125,0.125, 5, 5])
-        plt.plot(prot[:,0], prot[:,1], label='reference')
-        plt.plot(buf[:,0], buf[:,1], label='pre-scale')
-        plt.legend(loc='best', fontsize=60)
-        plt.xlabel('Scattering Vector (Å' + r'$^{-1}$' + ')', fontsize=60)
-        plt.ylabel('Scattering Intensity', fontsize=60)
-        plt.title(str(dataset) + ' Before Scaling', fontsize=70)
-        plt.xticks(fontsize=55)
-        plt.yticks(fontsize=55)
-        plt.set_cmap('viridis')
+#         # plot data prior to scaling
+#         ax = plt.axes([0.125,0.125, 5, 5])
+#         plt.plot(prot[:,0], prot[:,1], label='reference')
+#         plt.plot(buf[:,0], buf[:,1], label='pre-scale')
+#         plt.legend(loc='best', fontsize=60)
+#         plt.xlabel('Scattering Vector (Å' + r'$^{-1}$' + ')', fontsize=60)
+#         plt.ylabel('Scattering Intensity', fontsize=60)
+#         plt.title(str(dataset) + ' Before Scaling', fontsize=70)
+#         plt.xticks(fontsize=55)
+#         plt.yticks(fontsize=55)
+#         plt.set_cmap('viridis')
     
-        a = plt.axes([-5, 0.5, 4, 4])
-        plt.plot(prot[:,0], prot[:,1], label='protein')
-        plt.plot(buf[:,0], buf[:,1], label='buffer')
-        plt.legend(loc='best', fontsize=60)
-        plt.xlabel('Scattering Vector (Å' + r'$^{-1}$' + ')', fontsize=60)
-        plt.ylabel('Scattering Intensity', fontsize=60)
-        plt.title(str(dataset) + ' Before Scaling', fontsize=70)
-        plt.xticks(fontsize=55)
-        plt.yticks(fontsize=55)
-        plt.set_cmap('viridis')
-        plt.xlim([qmin, qmax])
+#         a = plt.axes([-5, 0.5, 4, 4])
+#         plt.plot(prot[:,0], prot[:,1], label='protein')
+#         plt.plot(buf[:,0], buf[:,1], label='buffer')
+#         plt.legend(loc='best', fontsize=60)
+#         plt.xlabel('Scattering Vector (Å' + r'$^{-1}$' + ')', fontsize=60)
+#         plt.ylabel('Scattering Intensity', fontsize=60)
+#         plt.title(str(dataset) + ' Before Scaling', fontsize=70)
+#         plt.xticks(fontsize=55)
+#         plt.yticks(fontsize=55)
+#         plt.set_cmap('viridis')
+#         plt.xlim([qmin, qmax])
     
-        # format borders
-        for axis in ['top','bottom','left','right']:
-            a.spines[axis].set_linewidth(5)
+#         # format borders
+#         for axis in ['top','bottom','left','right']:
+#             a.spines[axis].set_linewidth(5)
 
-        # mark inset
-        mark_inset(ax, a, loc1=1, loc2=4, fc="none", ec="0.5", 
-                   linewidth=4)
+#         # mark inset
+#         mark_inset(ax, a, loc1=1, loc2=4, fc="none", ec="0.5", 
+#                    linewidth=4)
     
-        # make directory for storing saved plots
-        make_dir(f=outdir+'/PLOTS/')
+#         # make directory for storing saved plots
+#         make_dir(f=outdir+'/PLOTS/')
     
-        #save plot
-        plt.savefig(outdir + '/PLOTS/' + str(dataset) + '_before_scale.png', 
-                bbox_inches='tight')
-        # show plot 
-        plt.show()
+#         #save plot
+#         plt.savefig(outdir + '/PLOTS/' + str(dataset) + '_before_scale.png', 
+#                 bbox_inches='tight')
+#         # show plot 
+#         plt.show()
     
         # mask data
         prot_mask = prot[prot[:,0] > qmin]
@@ -616,6 +616,9 @@ def saxs_scale(ref, scale, dataset, err=False, delim=',', mask=0, qmin=1.5, qmax
                    linewidth=4)
         
         if outfile is not None:
+            # make directory for storing saved plots
+            make_dir(f=outdir + '/PLOTS/')
+            
             # save scaled curve
             np.savetxt(str(outdir) + '/' + str(outfile), np.c_[buf[:, 0], scaled, buf_err], delimiter=",")
         
