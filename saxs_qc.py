@@ -37,7 +37,7 @@ from sklearn.metrics import r2_score
 from scipy.interpolate import interp1d
 
 from file_handling import *
-
+from saxs_processing import *
 
 import numpy as np
 from scipy.optimize import curve_fit
