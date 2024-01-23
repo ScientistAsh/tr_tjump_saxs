@@ -45,7 +45,7 @@ from scipy.optimize import curve_fit
 
 def delta_pr(curve1, curve2, delim1=None, delim2=None, skip1=None, 
             skip2=None, kind='linear', fill_value='extrapolate',
-            outfile=None):
+            outdir=None, outfile=None):
     '''
     This function calculates the difference between two distance
     distribution functions (P(r)). Function assumes the x-values 
@@ -108,6 +108,10 @@ def delta_pr(curve1, curve2, delim1=None, delim2=None, skip1=None,
         https://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.interp1d.html).
         fill_value for both curve1 and curve2 are the same. 
         
+    outdir (optional) : str
+        Full path to directory to store output files in. If the directory does not already exist
+        it will be made. When set tyo None, then no files will be saved. The default value is None. 
+        
     outfile (optional) : str
         File name, including full path, to store output files. Saved output files include the 
         delta P(r) curve contained in a CSV file and a png plot. 
@@ -151,9 +155,10 @@ def delta_pr(curve1, curve2, delim1=None, delim2=None, skip1=None,
         ax.spines[axis].set_linewidth(5)
         
     # save files
-    if outfile is not None:
-        np.savetxt(fname=str(outfile) + '.csv', X=np.c_[delta_pr[0], delta_pr[1]], delimiter=',')    
-        plt.savefig(str(outfile) + '.png', bbox_inches='tight')
+    if outdir is not None:
+        make_dir(f=outdir)
+        np.savetxt(fname=str(outdir + outfile) + '.csv', X=np.c_[delta_pr[0], delta_pr[1]], delimiter=',')    
+        plt.savefig(str(outdir + outfile) + '.png', bbox_inches='tight')
 
     plt.show()
         
