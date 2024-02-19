@@ -138,10 +138,10 @@ def saxs_auc(flist, times=[1.5, 3, 5, 10, 50, 100, 300, 500, 1000],
         print('\033[94;1mLoading ' + str(f) + '\033[94;1m')
 
         # convert time to integer
-        if t[-2:] == 'ms':
-            t = int(t[:-2]) * 1000
-        else:
-            t = int(t[:-2])
+        #if t[-2:] == 'ms':
+        #    t = int(t[:-2]) * 1000
+        #else:
+        #    t = int(t[:-2])
             
         # load data
         data = load_saxs(file=f, delim=delim, mask=mask)
@@ -191,9 +191,8 @@ def saxs_auc(flist, times=[1.5, 3, 5, 10, 50, 100, 300, 500, 1000],
 def svd_kinectics(flist, delim=',', times=[1.5,3,5,10,50,100,300,500,1000], 
                   time_unit='us', outdir=None):
     '''
-    Function to perform SVD on SAXS curves to identify outliers 
-    and save the outliers to a txt file. Saves the right and 
-    left vectors as a CSV file.
+    Function to perform SVD on SAXS curves to identify signal
+    components. Saves the right and left vectors as a CSV file.
     
     Parameters:
     -----------
@@ -506,7 +505,7 @@ def auc_fit(file, x, columns=None, delim=',', skip=0, func='double', initial_gue
         make_dir(f=outdir)
         plt.savefig(str(outdir) + '/' + str(outfile) + '.png', bbox_inches='tight')
 
-        np.savetxt(oudir + outfile + '_' + str(func) + '_model.csv', 
+        np.savetxt(outdir + outfile + '_' + str(func) + '_model.csv', 
                    np.c_[np.linspace(min(xdata), max(xdata), int(max(xdata))), model], 
                    delimiter=',', header='time,' + str(func) + '_exp_decay_model',
                    comments='# ' + str(plot_title) + ' | Calculated with tr_tjump_saxs_analysis Python package | ' + datetime.datetime.now().strftime('%d %B %Y'))
