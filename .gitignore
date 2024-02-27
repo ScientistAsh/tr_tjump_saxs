@@ -1,2 +1,4 @@
 .ipynb_checkpoints
 *.pyc
+__pycache__
+./TUTORIALS/tutorial3_saxs_processing_scattering.ipynb
