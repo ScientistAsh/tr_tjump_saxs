@@ -164,3 +164,119 @@ def delta_pr(curve1, curve2, delim1=None, delim2=None, skip1=None,
         
     
     return delta_pr
+
+# Function to load pdb data
+def load_pdb(file):
+    '''
+    This function will load a single PDB file.  
+    
+    Parameters:
+    -----------
+    file : str
+        String for the full path to the PDB file to be loaded.  
+        
+    Returns:
+    --------
+     p : MDAnalysis.Universe
+        An MDAnalysis Universe object containing the loaded PDB structure.
+
+    Raises:
+    -------
+    FileNotFoundError
+        If the file does not exist.
+        
+    IOError
+        If the file cannot be read.
+        
+    ValueError
+        If the file format is incorrect or the file cannot be parsed.
+        
+    Examples:
+    ---------
+    pdb = load_pdb(file='path/to/your/file.pdb')
+    '''
+    # set formating parameters
+    red = "\033[131m"
+    green = "\033[1;32m"
+    reset = "\033[0m"
+
+    # load pdb file
+    try:
+        if not os.path.exists(file):
+            raise FileNotFoundError(red + f"The file {file} does not exist." + reset)
+        
+        p = mda.Universe(file)
+        print(green + "PDB file loaded successfully!" + reset)
+        return p
+
+    # exception raising
+    except FileNotFoundError as fnf_error:
+        print(red + fnf_error + reset)
+    except IOError as io_error:
+        print(red + f"Error reading the file {file}: {io_error}" + reset)
+    except ValueError as val_error:
+        print(red + f"Error parsing the file {file}: {val_error}" + reset)
+    except Exception as e:
+        print(red + f"An unexpected error occurred: {e}" + reset)
+
+# function to load a set of PDBs
+def load_pdb_set(directory):
+    '''
+    This function will load a set of PDB files.  
+    
+    Parameters:
+    -----------
+    directory : str
+        String for the full path to the directory storing the PDB files.  
+        
+    Returns:
+    --------
+     structures : list
+        A list in which each entry is an MDAnalysis Universe object containing the loaded PDB structure.
+
+    Raises:
+    -------
+    FileNotFoundError
+        If the directory does not exist.
+    IOError
+        If there is an error reading the files in the directory.
+        
+    Examples:
+    ---------
+    pdb = load_pdb_set(directory='path/to/your/directory/')
+    '''
+    
+    # set formating parameters
+    red = "\033[131m"
+    green = "\033[1;32m"
+    reset = "\033[0m"
+    
+    structures = []
+
+    try:
+        if not os.path.exists(directory):
+            raise FileNotFoundError(red + f"The directory {directory} does not exist." + reset)
+        
+        for filename in os.listdir(directory):
+            if filename.endswith(".pdb"):
+                file_path = os.path.join(directory, filename)
+                try:
+                    u = mda.Universe(file_path)
+                    structures.append(u)
+                    print('PDB file loaded successfully!')
+                    
+                except Exception as e:
+                    print(red + f"Error loading file {file_path}: {e}" + reset)
+
+        print(green + 'Successfully loaded ' + str(len(structures)) + ' PDB files.' + reset)
+
+    except FileNotFoundError as fnf_error:
+        print(red + fnf_error + reset)
+    except IOError as io_error:
+        print(red + f"Error reading files in directory {directory}: {io_error}" + reset)
+    except Exception as e:
+        print(red + f"An unexpected error occurred: {e}" + reset)
+        
+
+          
+    return structures
