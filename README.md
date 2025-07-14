@@ -90,10 +90,10 @@ The `saxs_modeling` module provides modeling saxs data. Functions will be added 
 - `bayesian_fit` contains the objective function for using Bayesian inference for fitting SAXS curves 
 
 ## Data avialbility
-[![SASDB](https://www.sasbdb.org/search/?q=Microsecond+dynamics+control+the+HIV-1+Envelope+conformation).
+[SASDB](https://www.sasbdb.org/search/?q=Microsecond+dynamics+control+the+HIV-1+Envelope+conformation).
 
 ## Script availability 
-[![Analysis Scripts](https://github.com/ScientistAsh/tr_tjump_saxs/tree/main/SCRIPTS). 
+[Analysis Scripts](https://github.com/ScientistAsh/tr_tjump_saxs/tree/main/SCRIPTS). 
 
 ## Citing
 For publications and presentations please ackwoledge the use of this package in the ackowledgements. 
