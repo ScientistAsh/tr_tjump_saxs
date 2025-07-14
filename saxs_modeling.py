@@ -19,15 +19,12 @@ from pandas import read_table,DataFrame
 from collections import namedtuple
 import shutil
 import math
-
 import warnings
 import matplotlib
 import matplotlib.pyplot as plt
-from mpl_toolkits.axes_grid1.inset_locator import (inset_axes, InsetPosition,
-                                                  mark_inset)
+from mpl_toolkits.axes_grid1.inset_locator import (inset_axes, InsetPosition, mark_inset)
 from numpy.linalg import svd
 import sys
-
 import seaborn as sns
 import matplotlib.pylab as pl 
 from time import sleep
@@ -35,13 +32,10 @@ from tqdm.notebook import tqdm
 import csv
 from sklearn.metrics import r2_score
 from scipy.interpolate import interp1d
-
+from scipy.optimize import minimize
 from file_handling import *
-
-
-import numpy as np
 from scipy.optimize import curve_fit
-
+#import MDAnalysis as mda
 
 def delta_pr(curve1, curve2, delim1=None, delim2=None, skip1=None, 
             skip2=None, kind='linear', fill_value='extrapolate',
@@ -165,21 +159,22 @@ def delta_pr(curve1, curve2, delim1=None, delim2=None, skip1=None,
     
     return delta_pr
 
-# Function to load pdb data
-def load_pdb(file):
+def load_structure(file, topology_file=None):
     '''
-    This function will load a single PDB file.  
+    This function will load a structure file in either PDB or trajectory format.
     
     Parameters:
     -----------
     file : str
-        String for the full path to the PDB file to be loaded.  
+        String for the full path to the structure file to be loaded (PDB or trajectory).
+    topology_file : str, optional
+        Path to the topology file (required for trajectory files like DCD).
         
     Returns:
     --------
-     p : MDAnalysis.Universe
-        An MDAnalysis Universe object containing the loaded PDB structure.
-
+    u : MDAnalysis.Universe
+        An MDAnalysis Universe object containing the loaded structure.
+        
     Raises:
     -------
     FileNotFoundError
@@ -193,25 +188,42 @@ def load_pdb(file):
         
     Examples:
     ---------
-    pdb = load_pdb(file='path/to/your/file.pdb')
+    u = load_structure(file='path/to/your/file.pdb')
+    u = load_structure(file='path/to/your/trajectory.dcd', topology_file='path/to/topology.psf')
     '''
-    # set formating parameters
+    # Set formatting parameters
     red = "\033[131m"
     green = "\033[1;32m"
     reset = "\033[0m"
 
-    # load pdb file
+    # Load structure file
     try:
         if not os.path.exists(file):
             raise FileNotFoundError(red + f"The file {file} does not exist." + reset)
         
-        p = mda.Universe(file)
-        print(green + "PDB file loaded successfully!" + reset)
-        return p
+        # Check if it's a PDB file
+        if file.endswith('.pdb'):
+            u = mda.Universe(file)
+            print(green + "PDB file loaded successfully!" + reset)
+        
+        # Check if it's a trajectory file
+        elif file.endswith(('.dcd', '.xtc', '.trr', '.nc')):
+            if topology_file is None:
+                raise ValueError(red + "Topology file is required for trajectory files." + reset)
+            if not os.path.exists(topology_file):
+                raise FileNotFoundError(red + f"The topology file {topology_file} does not exist." + reset)
+            
+            u = mda.Universe(topology_file, file)
+            print(green + "Trajectory file loaded successfully!" + reset)
+        
+        else:
+            raise ValueError(red + f"Unsupported file format: {file}" + reset)
+        
+        return u
 
-    # exception raising
+    # Exception handling
     except FileNotFoundError as fnf_error:
-        print(red + fnf_error + reset)
+        print(red + str(fnf_error) + reset)
     except IOError as io_error:
         print(red + f"Error reading the file {file}: {io_error}" + reset)
     except ValueError as val_error:
@@ -219,64 +231,154 @@ def load_pdb(file):
     except Exception as e:
         print(red + f"An unexpected error occurred: {e}" + reset)
 
+
 # function to load a set of PDBs
-def load_pdb_set(directory):
+def load_ensemble(files, topology_files=None):
     '''
-    This function will load a set of PDB files.  
+    This function will load a single or a list of PDB or trajectory files.
     
     Parameters:
     -----------
-    directory : str
-        String for the full path to the directory storing the PDB files.  
+    files : str or list of str
+        A single file path or a list of file paths to the structure files to be loaded.
+    topology_files : str or list of str, optional
+        Path(s) to the topology file(s) corresponding to the trajectory files, if applicable.
+        If a single topology file is provided, it will be used for all trajectory files.
         
     Returns:
     --------
-     structures : list
-        A list in which each entry is an MDAnalysis Universe object containing the loaded PDB structure.
-
+    structures : list
+        A list in which each entry is an MDAnalysis Universe object containing the loaded structure.
+        
     Raises:
     -------
     FileNotFoundError
-        If the directory does not exist.
-    IOError
-        If there is an error reading the files in the directory.
+        If any of the files do not exist.
+    ValueError
+        If a topology file is required but not provided.
         
     Examples:
     ---------
-    pdb = load_pdb_set(directory='path/to/your/directory/')
+    # Load a single PDB file
+    structures = load_structures(files='path/to/your/file.pdb')
+    
+    # Load multiple PDB or trajectory files
+    structures = load_structures(files=['path/to/your/file1.pdb', 'path/to/your/file2.dcd'], 
+                                 topology_files='path/to/your/topology.psf')
     '''
     
-    # set formating parameters
+    # Set formatting parameters
     red = "\033[131m"
     green = "\033[1;32m"
     reset = "\033[0m"
     
+    # Ensure `files` is a list, even if a single file is provided
+    if isinstance(files, str):
+        files = [files]
+    
+    # Ensure `topology_files` is a list if multiple trajectory files are provided
+    if isinstance(topology_files, str):
+        topology_files = [topology_files] * len(files)
+    
     structures = []
 
     try:
-        if not os.path.exists(directory):
-            raise FileNotFoundError(red + f"The directory {directory} does not exist." + reset)
-        
-        for filename in os.listdir(directory):
-            if filename.endswith(".pdb"):
-                file_path = os.path.join(directory, filename)
+        for i, file_path in enumerate(files):
+            if not os.path.exists(file_path):
+                raise FileNotFoundError(red + f"The file {file_path} does not exist." + reset)
+            
+            # Load PDB files
+            if file_path.endswith(".pdb"):
                 try:
                     u = mda.Universe(file_path)
                     structures.append(u)
-                    print('PDB file loaded successfully!')
+                    print(green + f'PDB file {file_path} loaded successfully!' + reset)
                     
                 except Exception as e:
-                    print(red + f"Error loading file {file_path}: {e}" + reset)
-
-        print(green + 'Successfully loaded ' + str(len(structures)) + ' PDB files.' + reset)
+                    print(red + f"Error loading PDB file {file_path}: {e}" + reset)
+            
+            # Load trajectory files
+            elif file_path.endswith(('.dcd', '.xtc', '.trr', '.nc')):
+                if topology_files is None:
+                    raise ValueError(red + f"Topology file is required for trajectory file {file_path}." + reset)
+                
+                topology_file = topology_files[i]
+                if not os.path.exists(topology_file):
+                    raise FileNotFoundError(red + f"The topology file {topology_file} does not exist." + reset)
+                
+                try:
+                    u = mda.Universe(topology_file, file_path)
+                    structures.append(u)
+                    print(green + f'Trajectory file {file_path} loaded successfully with topology {topology_file}!' + reset)
+                    
+                except Exception as e:
+                    print(red + f"Error loading trajectory file {file_path}: {e}" + reset)
+            
+            else:
+                print(red + f"Unsupported file format: {file_path}. Skipping file." + reset)
+        
+        print(green + f'Successfully loaded {len(structures)} structure files.' + reset)
 
     except FileNotFoundError as fnf_error:
-        print(red + fnf_error + reset)
-    except IOError as io_error:
-        print(red + f"Error reading files in directory {directory}: {io_error}" + reset)
+        print(red + str(fnf_error) + reset)
+    except ValueError as val_error:
+        print(red + str(val_error) + reset)
     except Exception as e:
         print(red + f"An unexpected error occurred: {e}" + reset)
-        
-
-          
+    
     return structures
+
+
+def initialize_weights_uniform(n_structures):
+    '''
+    Initialize weights to be uniformly distributed to fit theoretical SAXS difference curves to experimental SAXS
+    difference curves.
+
+    Parameters:
+    ------------
+    n_structures : int 
+        The number of structures in the ensemble.
+        
+    Returns:
+    ---------
+    Array of weights initialized to uniform values.
+    '''
+    return np.ones(n_structures) / n_structures
+
+
+
+def bayesian_fit(weights, difference_curves, experimental_saxs):
+    """
+    Objective function to minimize the chi-squared difference and maximize entropy. 
+    Chi-squared is calculated according to:
+             chi_squared = np.sum((calculated_saxs - experimental_saxs) ** 2)
+             
+    The maximum entropy principle is defined by:
+                entropy = -np.sum(weights * np.log(weights + 1e-10))
+
+    Parameters:
+    -----------
+    weights : np.array() 
+        Array of weights for the structures.
+        
+    difference_curves : np.array
+        Precomputed difference curves for the ensemble.
+        
+    experimental_saxs : np. array()
+        Experimental SAXS difference curve.
+        
+    Returns:
+    ---------
+    Value of the objective function.
+    """ 
+    
+    calculated_saxs = np.sum(weights[:, None] * difference_curves, axis=0)
+    
+    chi_squared = np.sum((calculated_saxs - experimental_saxs) ** 2)
+    
+    # Entropy term for maximum entropy principle
+    entropy = -np.sum(weights * np.log(weights + 1e-10))  # Small value to avoid log(0)
+    
+    # Objective: minimize chi_squared, maximize entropy (negative sign for entropy)
+    return chi_squared - entropy
+

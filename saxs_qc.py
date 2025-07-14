@@ -147,8 +147,8 @@ def guinier_analysis(file, label, delim=',', mask=0, qmin=None, qmax=None,
     curve = load_saxs(file=file, delim=delim, mask=mask)
     
     # define guinier equation
-    def guinier_equation(q, i0, rg):
-        return i0 * np.exp(-0.5 * (rg * q) ** 2)
+    def guinier_equation(q_squared, ln_I0, slope):
+        return ln_I0 + slope * q_squared
 
     print('Running Guinier Analysis...')
     
@@ -172,27 +172,30 @@ def guinier_analysis(file, label, delim=',', mask=0, qmin=None, qmax=None,
     y = np.log(curve[:, 1])
     y_masked = y[mask]
 
+    #return curve, y_masked, x_masked
+
     # Perform the curve fit using the Guinier equation
-    popt, pcov = scipy.optimize.curve_fit(guinier_equation, x_masked, y_masked, method='lm', 
-                                          p0=[initial_guess[0],initial_guess[1]], 
-                                          maxfev=50000)
+    popt, pcov = scipy.optimize.curve_fit(guinier_equation, x_masked, y_masked,  
+                                          p0=[np.log(initial_guess[0]), -0.5 * initial_guess[1] ** 2])
 
     x_range = np.linspace(np.min(x_masked), np.max(x_masked), len(x_masked))
     model = guinier_equation(x_range, *popt)
-    
+
+    # calculate residuals
+    residuals = y_masked - model
+
     # Extract fitted parameters
-    I_0 = np.exp(popt[0])
-    Rg = np.sqrt(3 * popt[1])  
-    
+    ln_I0, slope = popt
+    I_0 = np.exp(ln_I0)
+    Rg = np.sqrt(-2 * slope)
 
-    # Extract the diagonal elements of the covariance matrix for errors
-    I_0_error = np.sqrt(pcov[0][0])
-    Rg_error = np.sqrt(3 * pcov[1][1])
+    # Extract errors from the covariance matrix
+    ln_I0_error = np.sqrt(pcov[0][0])
+    slope_error = np.sqrt(pcov[1][1])
 
-
-    # Calculate the scaled errors
-    I_0_error_scaled = I_0 * I_0_error
-    Rg_error_scaled = Rg * (Rg_error / abs(popt[1]))
+    # Calculate scaled errors
+    I_0_error_scaled = I_0 * ln_I0_error
+    Rg_error_scaled = (slope_error / abs(slope)) * Rg
 
     # Print values
     print("Rg  = {:.2f} +/- {:.2f}".format(Rg,Rg_error_scaled))
@@ -203,6 +206,7 @@ def guinier_analysis(file, label, delim=',', mask=0, qmin=None, qmax=None,
     print('Fitting model...')
     x_range = np.linspace(np.min(x_masked), np.max(x_masked), len(x_masked))
     model = guinier_equation(x_range, *popt)
+
     
     # plot data
     print('Plotting Data...')
@@ -222,8 +226,20 @@ def guinier_analysis(file, label, delim=',', mask=0, qmin=None, qmax=None,
     plt.yticks(fontsize=50)
     plt.title(str(label) + ' Guinier Analysis', fontsize=70, fontweight='bold')
     plt.legend(fontsize=60)
-    plt.text(0.45, 0.1,'R$_{g}$ = ' + "{:.5f}".format(Rg) + ' ± ' + "{:.5f}".format((Rg_error)) + '\nI$_{0}$ = ' + "{:.5f}".format(I_0) + ' ± ' + "{:.5f}".format((I_0_error)),
+    plt.text(0.45, 0.1,'R$_{g}$ = ' + "{:.5f}".format(Rg) + ' ± ' + "{:.5f}".format((Rg_error_scaled)) + '\nI$_{0}$ = ' + "{:.5f}".format(I_0) + ' ± ' + "{:.5f}".format((I_0_error_scaled)),
              horizontalalignment='right', verticalalignment='center', transform=ax1.transAxes, fontsize=70, color='red')
+
+    # Plot residuals
+    print('Plotting Residuals...')
+    plt.figure(figsize=(10, 4))
+    plt.scatter(x_masked, residuals, color='blue', label='Residuals', s=50)
+    plt.axhline(0, color='red', linestyle='--', linewidth=1.5, label='Zero Line')
+    plt.xlabel('$q^2$', fontsize=14, fontweight='bold')
+    plt.ylabel('Residuals', fontsize=14, fontweight='bold')
+    plt.title(f'{label} Residuals', fontsize=16, fontweight='bold')
+    plt.legend(fontsize=12)
+    plt.grid(True)
+    plt.show()
     
     # set thickness of graph borders
     for axis in ['top','bottom','left','right']:
@@ -241,19 +257,20 @@ def guinier_analysis(file, label, delim=',', mask=0, qmin=None, qmax=None,
         np.savetxt(str(outdir + label) + '_guinier.csv', np.c_[x[:xmax], y[:xmax]], header='q^2,ln(I)',
                    delimiter=',', comments='# Guinier Analysis for ' + str(label) + ' | ' + str(current_date))
         
-        np.savetxt(str(outdir + label) + '_guinier_params.csv', np.c_[Rg, Rg_error, I_0, I_0_error], header='Rg,Rg_err,I0,I0_err',
+        np.savetxt(str(outdir + label) + '_guinier_params.csv', np.c_[Rg, Rg_error_scaled, I_0, I_0_error_scaled], header='Rg,Rg_err,I0,I0_err',
                    delimiter=',', comments='# Guinier Rg and I0 parameters for ' + str(label) + ' | ' + str(current_date))
     
         np.savetxt(str(outdir + label) + '_guinier_fit.csv', np.c_[x_masked, model], header='q2,ln(I)',
                    delimiter=',', comments='# Guinier Fit for ' + str(label) + ' | ' + str(current_date))
-    
+        
+        np.savetxt(str(outdir + label) + '_residuals.csv', np.c_[x_masked, residuals], header='q2,residuals',
+                   delimiter=',', comments='# Guinier Fit Residuals for ' + str(label) + ' | ' + str(current_date))
     
     
     plt.show()
 
 
-    return Rg, Rg_error_scaled, I_0, I_0_error_scaled, model
-
+    return Rg, Rg_error_scaled, I_0, I_0_error_scaled, model, curve
 
 
 
