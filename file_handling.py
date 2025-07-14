@@ -201,7 +201,7 @@ def sort_key(file_path):
     
     
 
-def load_saxs(file, delim=' ', mask=0):
+def load_saxs(file, delim=' ', mask=0, max_rows=None, converters=None):
     '''
     Function to load a single SAXS difference curve as an array. Data file must be a flat text file
     delimited by space, tab, or comma. Automatically loads all columns in the given input file. To
@@ -210,7 +210,6 @@ def load_saxs(file, delim=' ', mask=0):
     
     Parameters:
     -----------
-    
     file : str
         File including full path containing SAXS difference curve. File should be a simple space, comma, or 
         tab delimited text file.
@@ -220,9 +219,19 @@ def load_saxs(file, delim=' ', mask=0):
         comma (','). Default value is space (' '). 
         
     mask (optional) : int
-        Number of rows to skip when loading files. Default values is 0. Useful for
+        Number of rows to skip when loading files. Default value is 0. Useful for
         skipping rows with NaN or masked values. 
 
+    max_rows (optional) : int
+        The maximum number of rows to skip when loading files. Default value is None. 
+        Useful for skipping the metadata rows at the end of Crysol output files. If 
+        set to None, then all rows will be imported. Default value is None. 
+
+    converters (optional) : dict or callable
+        Functions to customize value parsing. If converters is callable, the function 
+        is applied to all columns, else it must be a dict that maps column number to a 
+        parser function. If set to None, then no specialized value parsing will be done.
+        The default value is None. 
         
     Returns:
     --------
@@ -232,7 +241,7 @@ def load_saxs(file, delim=' ', mask=0):
         
     Examples:
     ----------
-    curve = load_saxs(file=unique_files[0], delim=' ', mask=12)
+    curve = load_saxs(file=unique_files[0], delim=' ', mask=12, max_rows=None, converters=None)
     
     curve
     > array([[0.01947379, 7.85679592],
@@ -265,12 +274,12 @@ def load_saxs(file, delim=' ', mask=0):
     **ALWAYS DOUBLE CHECK THE STUCTURE OF YOUR DATA BEFORE PROCEEDING WITH ANALYSIS**
     ''' 
     
-    data = np.loadtxt(file, delimiter=delim, skiprows=mask)
+    data = np.loadtxt(file, delimiter=delim, skiprows=mask, max_rows=max_rows, converters=converters)
                 
     return data
 
 
-def load_set(flist,  delim=' ', mask=0, err=False):
+def load_set(flist,  delim=' ', mask=0, max_rows=None, converters=None, err=False):
     '''
     Function to load a set of SAXS scattering curves with a specific file prefix/suffix 
     in a given directory. Input data has columns for q and I.
@@ -291,6 +300,16 @@ def load_set(flist,  delim=' ', mask=0, err=False):
     mask (optional) : int
         Number of rows to skip when loading files. Default values is 0. Useful for
         skipping rows with NaN or masked values. 
+
+    max_rows (optional) : int
+        The maximum number of rows to skip when loading files. Default value is None. 
+        Useful for skipping the metadata rows at the end of Crysol output files. 
+
+    converters (optional) : dict or callable
+        Functions to customize value parsing. If converters is callable, the function 
+        is applied to all columns, else it must be a dict that maps column number to a 
+        parser function. If set to None, then no specialized value parsing will be done.
+        The default value is None. 
         
     err (optional) : bool
         Indicates if there is the column containing experimental error. If set 
@@ -325,7 +344,7 @@ def load_set(flist,  delim=' ', mask=0, err=False):
 
     Examples:
     ----------
-    data, data_arr, q, error = load_set(flist=unique_files, delim=' ', mask=12, err=True)
+    data, data_arr, q, error = load_set(flist=unique_files, delim=' ', mask=12, max_rows=None, converters=None, err=True)
     
     data_arr
     > array([[7.85679592, 7.63967921, 7.51242249, ..., 0.96619764, 0.96530417,
@@ -391,7 +410,7 @@ def load_set(flist,  delim=' ', mask=0, err=False):
        
         # load laser on data
         for f in tqdm(flist, desc='Loading curves'):
-            curve = load_saxs(file=f, delim=delim, mask=mask) 
+            curve = load_saxs(file=f, delim=delim, mask=mask, max_rows=max_rows, converters=converters) 
         
             # append curve to vector list
             data.append(curve[:,1])
@@ -417,7 +436,7 @@ def load_set(flist,  delim=' ', mask=0, err=False):
             # load laser on data
             
             for f in tqdm(flist, desc='Loading curves'):
-                curve = load_saxs(file=f, delim=delim, mask=mask) 
+                curve = load_saxs(file=f, delim=delim, mask=mask, max_rows=max_rows, converters=converters) 
         
                 # append curve to vector list
                 data.append(curve[:,1])

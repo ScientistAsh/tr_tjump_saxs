@@ -1,9 +1,11 @@
 # tr_tjump_saxs
+**© Dr. Ashley L. Bennett**
 **Language:** Python3 <br>
-**Lincense:** BSD-3 Clause <br>
+**License:** Proprietary License. Use permitted under certain condidtions. Contact @ScientistAsh for usage license. <br>
 **Developer:** @ScientistAsh <br>
-**Updated:** 20 October 2023 <br>
-**v1.0.0** [![DOI](https://zenodo.org/badge/622369035.svg)](https://zenodo.org/doi/10.5281/zenodo.10028766) <br>
+**Updated:** 14 July 2025 <br>
+**Published version is v1.0.0** [![DOI](https://zenodo.org/badge/622369035.svg)](https://zenodo.org/doi/10.5281/zenodo.10028766) <br>
+    *Updated: 14 October 2023* <br>
 
 ## Description
 Python package to process and analyze pump-probe time resolved, temperature-jump small angle X-ray scattering data.
@@ -77,17 +79,21 @@ The `saxs_kinetics` module provides functions to determine the kinetics from SAX
 - `saxs_auc()` uses the Simpson's method to determine the area under the curve for a given set of SAXS difference curves
 - `svd_kinetics()` runs an SVD analysis on a set of input SAXS difference curves
 - `auc_fit()` fits the area under the curve data to exponential equations
-- ` svd_fit()` fits the SVD right vectors to exponential equations
+- `svd_fit()` fits the SVD right vectors to exponential equations
 
 ### `saxs_modeling`
 The `saxs_modeling` module provides modeling saxs data. Functions will be added to this module in the future. The functions currently in this module include:
 - `delta_pr` uses an interpolation method to subtract a P(r) curve from a reference P(r) curve
+- `load_structure` loads a PDB structure into Python object
+- `load_ensemble` loads a set of PDB structures
+- `initialize_weights` initializes weights for Bayesian based structure fitting of curves
+- `bayesian_fit` contains the objective function for using Bayesian inference for fitting SAXS curves 
 
 ## Data avialbility
-*COMING SOON*
+[![SASDB](https://www.sasbdb.org/search/?q=Microsecond+dynamics+control+the+HIV-1+Envelope+conformation).
 
 ## Script availability 
-*COMING SOON*
+[![Analysis Scripts](https://github.com/ScientistAsh/tr_tjump_saxs/tree/main/SCRIPTS). 
 
 ## Citing
 For publications and presentations please ackwoledge the use of this package in the ackowledgements. 
