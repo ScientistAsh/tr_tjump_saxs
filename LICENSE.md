@@ -1,7 +1,7 @@
-**Proprietary Software License Agreement**
-**Software Name:** tr_tjump_saxs
-**Version:** V.1.0.0
-**Effective Date:** 14 July 2025
+**Proprietary Software License Agreement** <br>
+**Software Name:** tr_tjump_saxs <br>
+**Version:** V.1.0.0 <br>
+**Effective Date:** 14 July 2025 <br>
 
 This Software License Agreement (“Agreement”) is a legal agreement between you (“Licensee”) and Dr. Ashley L. Bennett (“Licensor”), the developer and copyright holder of the software described below.
 
@@ -12,12 +12,12 @@ Licensor hereby grants Licensee a non-exclusive, non-transferable, non-sublicens
 
 **2. Restrictions**
 Licensee shall not:
-> Copy, modify, distribute, or create derivative works of the Software without prior written permission from Licensor;
-> Decompile, reverse engineer, disassemble, or otherwise attempt to derive source code from the Software;
-> Rent, lease, sell, sublicense, or otherwise transfer the Software to any third party;
-> Remove or alter any copyright, trademark, or proprietary notices from the Software;
-> Use the Software to provide services to third parties without written consent.
-> Publish works using the software without authorship credit to Licensor. 
+> Copy, modify, distribute, or create derivative works of the Software without prior written permission from Licensor <br>
+> Decompile, reverse engineer, disassemble, or otherwise attempt to derive source code from the Software <br>
+> Rent, lease, sell, sublicense, or otherwise transfer the Software to any third party <br>
+> Remove or alter any copyright, trademark, or proprietary notices from the Software <br>
+> Use the Software to provide services to third parties without written consent <br>
+> Publish works using the software without authorship credit to Licensor <br>
 
 **3. Ownership**
 The Software is licensed, not sold. All rights, title, and interest in and to the Software, including all intellectual property rights, remain with the Licensor (© Dr. Ashley L. Bennett).
@@ -42,5 +42,5 @@ This Agreement constitutes the entire agreement between the parties and supersed
 
 Contact
 For any questions about this license or to request a commercial or academic use agreement, please contact:
-> Dr. Ashley L. Bennett
-> scientist.ashb@gmail.com
+> Dr. Ashley L. Bennett <br>
+> scientist.ashb@gmail.com <br>
