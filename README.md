@@ -1,8 +1,8 @@
 # tr_tjump_saxs
-**© Dr. Ashley L. Bennett**
-**Language:** Python3 <br>
+**© Dr. Ashley L. Bennett** <br>
 **License:** Proprietary License. Use permitted under certain condidtions. Contact @ScientistAsh for usage license. <br>
 **Developer:** @ScientistAsh <br>
+**Language:** Python3 <br>
 **Updated:** 14 July 2025 <br>
 **Published version is v1.0.0** [![DOI](https://zenodo.org/badge/622369035.svg)](https://zenodo.org/doi/10.5281/zenodo.10028766) <br>
     *Updated: 14 October 2023* <br>
