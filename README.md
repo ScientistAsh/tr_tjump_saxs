@@ -5,7 +5,7 @@
 **Language:** Python3 <br>
 **Current Version:** 
 > v1.1.0 <br>
-> *Updated:* 14 July 2025 <br>
+> *Updated:* 20 April 2025 <br>
 
 **Published version:** <br>
 > 1.0.0 [![DOI](https://zenodo.org/badge/622369035.svg)](https://zenodo.org/doi/10.5281/zenodo.10028766) <br>
